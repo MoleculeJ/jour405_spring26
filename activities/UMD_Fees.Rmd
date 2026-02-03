@@ -12,9 +12,6 @@ Follow along with the demo to learn how to calculate percentage change using R a
 library(tidyverse)
 ```
 
-
-
-
 ### Task 2: Load the UMD Fees dataset from https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/umd_fees.csv
 
 ```{r}
@@ -24,17 +21,34 @@ umd_fees <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/hea
 ### Task 3: Calculate the percentage change in each category between Fall 2024 and Fall 2021 using `mutate()`
 
 ```{r}
-umd_fees_pct <- umd_fees |> mutate(pct_change = (`Fall 2024`- `Fall 2021`)/`Fall 2021` * 100)
+umd_fees_pct <- umd_fees |> 
+  mutate(pct_change = (`Fall 2024`- `Fall 2021`)/`Fall 2021` * 100)
 ```
 
+```{r}
+umd_fees_pct_2524 <- umd_fees |> 
+  mutate(pct_change = (`Fall 2025`- `Fall 2024`)/`Fall 2024` * 100)
+```
 
 
 ### Task 4: Describe our results
 
 Write a few sentences about what you found in the data. What's the story here?
 
+Overall, the student fees increased nearly 20% from 2021 to 2024, and by almost 5% from 2024 to 2025. The largest percentage change over the 4 years was in "Student Sustainability" fees, which rose by more than 100%, while the largest change from last year was in "Student Activities" fees. A potential story could be about why "Student Sustainability" and "Student Activities" fees have been increased more than other categories over the past 4 years and the past year, respectively, what these fees are used for, and do those things properly capture the amount of fees that have been changed—does the university seem to be more sustainable for students or do students get better activities.     
 
 
+```{r}
+comp <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/class_composition.csv")
 
+comp |>
+  summarize(
+    mean_first = mean(first_year),
+    mean_soph = mean(sophomore),
+    mean_junior = mean(junior),
+    mean_senior = mean(senior),
+    mean_grad = mean(grad)
+  )
+```
 
 When you are done, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS.
