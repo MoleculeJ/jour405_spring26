@@ -9,6 +9,7 @@ In this assignment, we will be working with a dataset containing information abo
 You will need to load the tidyverse library
 
 ```{r}
+library(tidyverse)
 ```
 
 Then you'll load the data from the web. The URL for the data is: https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/white_house_salaries_2025.csv. You will create a dataframe called `wh_salaries` that contains the data from this URL.
@@ -16,6 +17,7 @@ Then you'll load the data from the web. The URL for the data is: https://raw.git
 ### Task 2: Load the Data and Describe It
 
 ```{r}
+wh_salaries <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/white_house_salaries_2025.csv")
 ```
 ### Task 3: Describe the Data
 
@@ -23,12 +25,18 @@ You should examine that dataframe carefully by clicking on it in the Environment
 
 ANSWER HERE
 
+Based on data, the range of salaries is from nearly 60,000 dollars to over 200,000 dollars per year; nonetheless, the most notable angle for me is that 15 out of 35 (42.85%) people who are the highest paid (including the top two) are categorized as "Detailee" (which I'm not sure if it means being hired temporarily) in the status column. My quick questions are who these people are and why they get paid the most for what seemed to be temporary positions. There are eight people who, from the file, get paid $0 per year, which seems to be a result of missing data, so it could be a problem for the analysis. Moreover, there are some position titles that aren't specific or clear about what they are doing, such as advisor, associate director, senior advisor, or staff assistant, which could make examining their salaries even harder, as there is no context.    
+
 ### Task 4: Calculate the Mean and Median of the Salaries
 
 Write code to calculate the mean and median of the salaries in the dataset using the `summarize()` function. You don't need to make a new dataframe, just display the results.
 
 ```{r}
-
+wh_salaries |>
+  summarise(
+    mean_salary = mean(SALARY),
+    median_salary = median(SALARY)
+  )
 ```
 
 ### Task 5: Add in the minimum and maximum salaries
@@ -36,7 +44,13 @@ Write code to calculate the mean and median of the salaries in the dataset using
 Take the code you just wrote and add in the minimum and maximum salaries (the functions for that are `min()` and `max()`). Your results should show four columns: mean_salary, median_salary, min_salary, max_salary.
 
 ```{r}
-
+wh_salaries |>
+  summarise(
+    mean_salary = mean(SALARY),
+    median_salary = median(SALARY),
+    min_salary = min(SALARY),
+    max_salary = max(SALARY),
+  )
 ```
 
 ### Task 6: Describe the Results
@@ -45,8 +59,12 @@ Write a couple of sentences describing the results of your analysis. What do the
 
 ANSWER HERE
 
+As the mean and median of this data are very close, this could mean that the distribution of this dataset is balanced, or all values are spread evenly around the center, and there aren't many extreme outliers. The $0 as min salary seems to be a missing piece of data, and the max salary is roughly double as an average, which could be important info for story ideas.    
+
 ### Task 7: Story Idea
 
 Based on the data, what is your best story idea? What is the next step you would take to develop that story idea?
 
 ANSWER HERE
+
+I think my best idea would stick with the 15 highest-paid people who are described as "Detailee", which includes the top two with the biggest paycheck in the dataset. The following steps would be; first, doing research or contacting proper corresponded people at the white house to clarify what "Detailee" status mean, and second, finding out who are these people, what are their professional titles, what organization or institution they are officially affiliated with, and what projects or policies they are involved with the white house, which could indicate agendas this administration pay much attention to.      
