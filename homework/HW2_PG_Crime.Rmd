@@ -37,10 +37,10 @@ pg_crime[is.na(pg_crime)] <- 0
 
 pg_crime_averages <- pg_crime |>
   mutate(
-    total_incident = Jan + Feb + Mar + Apr + May + Jun + Jul + Aug + Sep + Oct + Nov + Dec 
+    total_incidents = Jan + Feb + Mar + Apr + May + Jun + Jul + Aug + Sep + Oct + Nov + Dec 
   ) |>
   mutate(
-    average_incidents = total_incident/12
+    average_incidents = total_incidents/12
   )
 ```
 
