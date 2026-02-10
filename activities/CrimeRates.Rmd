@@ -12,8 +12,6 @@ install.packages("janitor")
 library(janitor)
 ```
 
-
-
 ### Task 2: Load the crime dataset from https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/md_annual_crime.csv
 
 ```{r}
@@ -32,7 +30,6 @@ crimes |> mutate(total_rate = grand_total/population * 10000)
 ```
 
 
-
 ### Task 5: Calculate the violent and property crime rates for each year (same unit)
 
 ```{r}
@@ -44,9 +41,8 @@ crimes_with_rates <- crimes |> mutate(violent_rate = violent_crime_total/populat
 ### Task 6: Describe our results
 
 Write a few sentences about what you found in the data. What years had the highest crime rates? What years had the lowest crime rates? Does the pattern match your expectations?
-
-
-
-
+---
+For the overview, the highest total crime rate in Maryland occurred in 1981, and the lowest happened in 2020. So we can generally conclude that Maryland today is safer. This pattern also somewhat matches the ones of violent crime and property crime, with the lowest crime rate appearing in 2020. However, while the highest crime rate of property crime occurred in the 1980s, the highest of violent crime happened in the 1990s, which deviates from the general trend.       
+---
 When you are done, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS.
 

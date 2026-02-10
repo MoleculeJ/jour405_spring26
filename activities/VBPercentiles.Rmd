@@ -29,6 +29,8 @@ team_aces <- matches |>
 ### Task 4: Calculate percentiles using `mutate()` and `ntile()`
 
 ```{r}
+#summary(team_aces$total_aces)
+
 team_aces |> mutate(percentile = ntile(total_aces, 100))
 ```
 
