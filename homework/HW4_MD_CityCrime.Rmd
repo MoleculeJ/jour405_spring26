@@ -39,7 +39,7 @@ Examine the new dataframe, `md_cities_rates`, by clicking on it in the Environme
 
 ANSWER HERE
 
-The top two cities for the highest rates of violent crime are Baltimore and Ocean City. In 2019, Baltimore had the highest rate at 18.34 per thousand people, while Ocean City came in second with 13.10 per thousand people. In 2020, they switched places, with 23.97 per thousand people in Ocean City and 15.97 per thousand in Baltimore. However, Baltimore does not seem distinct when it comes to property crime. On the contrary, Ocean City is at the top for property crime rate in both 2019 and 2020, with 103.69 and 121.28 per thousand people, respectively. The story here could be about why Baltimore is so packed with violent crime, but not property crime, and why Ocean City seems to be the most dangerous city in Maryland, with the highest rates in violent and property crime. Another noticeable thing is that among the top five cities with the highest violent and property crimes rate, besides Ocean City, Elkton is another city that appears in both categories and both years. This could be an interesting angle to tell as well.         
+The top two cities for the highest rates of violent crime are Baltimore and Ocean City. In 2019, Baltimore had the highest rate at 18.34 per thousand people, while Ocean City came in second with 13.10 per thousand people. In 2020, they switched places, with 23.97 per thousand people in Ocean City and 15.97 per thousand in Baltimore. However, Baltimore does not seem distinct when it comes to property crime. On the contrary, Ocean City is at the top for property crime rate in both 2019 and 2020, with 103.69 and 121.28 per thousand people, respectively. The story here could be about why Baltimore is so packed with violent crime, but not property crime, and why Ocean City seems to be the most dangerous city in Maryland, with the highest rates in violent and property crime. Another noticeable thing is that among the top five cities with the highest violent and property crimes rate, besides Ocean City, Elkton and Cambridge are the other cities that appears in both categories. This could be an interesting angle to tell as well.         
 
 
 ### Task 5: Calculate Percentage Change
@@ -78,3 +78,40 @@ In 2019, Ocean City, Worcester, had the second-highest rate in violent crime out
 ### Task 9: Save Your Work and Put it on GitHub
 
 Save this notebook, then commit it to your local repository. Push the changes to your GitHub repository and submit the URL for this file in ELMS.
+
+### Task 10.
+
+- Using the 2020 violent crime rate, calculate the percentiles using `ntile()`. Save the results to a new dataframe called `md_cities_percentiles`. How many cities are above the 90th percentile?
+
+```{r}
+md_cities_percentiles <- md_cities_rates |>
+  mutate(percentile_violent_2020 = ntile(violent_rate_2020, 100)) |>
+  select(city, county, violent_rate_2020, percentile_violent_2020)
+```
+
+ANSWER: There are 10 cities that are above 90th percentile. 
+
+- Calculate the Interquartile Range of the 2020 violent crime rate using `summarize()` and R's `IQR()` function. The syntax is similar to how `mean()` works.
+
+```{r}
+md_cities_percentiles |>
+  summarise(
+    iqr_violent_2020 = IQR(violent_rate_2020)
+  )
+```
+- Do the results change your best story idea from the previous assignment? Why or why not?
+
+```{r}
+#Im gonna find potential outliers from IQR
+#Find Q1 and Q3 first
+summary(md_cities_percentiles$violent_rate_2020)
+```
+```{r}
+#Q1 - (IQR)(1.5)
+0 - (4.2)*(1.5)
+#Q3 + (IQR)(1.5)
+4.199 + (4.2)*(1.5)
+#So outliers are anything that below -6.3 and above 10.499
+```
+ANSWER : Yes, I think so. From IQR, I can calculate the potential outliers of this dataset, which are any cities that have a violent crime rate below -6.3 or above 10.499. There are five cities—Ocean City, Baltimore, Cambridge, Princess Anne, and Kitzmiller—with a violent crime rate above 10.499, considering outliers or meaning that these 5 cities have an abnormally high violent crime rate compared to other Maryland cities in general, and worth looking into. 
+
