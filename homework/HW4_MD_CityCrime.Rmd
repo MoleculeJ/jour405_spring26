@@ -9,6 +9,8 @@ In this assignment, we will be working with a dataset of total crimes reported b
 You will need to load the tidyverse library and the janitor library
 
 ```{r}
+library(tidyverse)
+library(janitor)
 ```
 
 Then you'll load the data from the web. The URL for the data is: https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/md_cities_crime_2019_2020.csv. You will create a dataframe called `md_cities` that contains the data from this URL.
@@ -16,12 +18,19 @@ Then you'll load the data from the web. The URL for the data is: https://raw.git
 ### Task 2: Load the Data
 
 ```{r}
+md_cities <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/md_cities_crime_2019_2020.csv")
 ```
 ### Task 3: Calculating Rates
 
 Calculate violent and property crime rates for each city for both years using `mutate()`. You'll create four new columns: `violent_rate_2019`, `property_rate_2019`, `violent_rate_2020`, and `property_rate_2020`. You'll need to figure out the proper unit rate, given that there are varying populations. There's no perfect choice; choose the one that works best for you. Save the results to a new dataframe called `md_cities_rates`.
 
 ```{r}
+md_cities_rates <- md_cities |>
+  mutate(violent_rate_2019 = violent2019/pop2019 *1000) |>
+  mutate(property_rate_2019 = property2019/pop2019 * 1000) |>
+  mutate(violent_rate_2020 = violent2020/pop2020 * 1000) |>
+  mutate(property_rate_2020 = property2020/pop2020 * 1000) |>
+  select(city, county, violent_rate_2019, property_rate_2019, violent_rate_2020, property_rate_2020)
 ```
 
 ### Task 4: Describe the Rates
@@ -30,12 +39,18 @@ Examine the new dataframe, `md_cities_rates`, by clicking on it in the Environme
 
 ANSWER HERE
 
+The top two cities for the highest rates of violent crime are Baltimore and Ocean City. In 2019, Baltimore had the highest rate at 18.34 per thousand people, while Ocean City came in second with 13.10 per thousand people. In 2020, they switched places, with 23.97 per thousand people in Ocean City and 15.97 per thousand in Baltimore. However, Baltimore does not seem distinct when it comes to property crime. On the contrary, Ocean City is at the top for property crime rate in both 2019 and 2020, with 103.69 and 121.28 per thousand people, respectively. The story here could be about why Baltimore is so packed with violent crime, but not property crime, and why Ocean City seems to be the most dangerous city in Maryland, with the highest rates in violent and property crime. Another noticeable thing is that among the top five cities with the highest violent and property crimes rate, besides Ocean City, Elkton is another city that appears in both categories and both years. This could be an interesting angle to tell as well.         
+
 
 ### Task 5: Calculate Percentage Change
 
 Let's add two percentage change columns to your dataframe: one for violent crime rates and one for property crime rates. You'll calculate the percentage change between 2019 and 2020 for each city. Save the results to a new dataframe called `md_cities_change`.
 
 ```{r}
+md_cities_change <- md_cities_rates |>
+  mutate(violent_percent_change = ((violent_rate_2020 - violent_rate_2019)/violent_rate_2019) * 100) |>
+  mutate(property_percent_change = ((property_rate_2020 - property_rate_2019)/property_rate_2019) * 100) |>
+  select(city, county, violent_percent_change, property_percent_change)
 ```
 
 ### Task 7: Describe Percentage Changes
@@ -44,11 +59,21 @@ Look at the `md_cities_change` dataframe by clicking on it in the Environment ta
 
 ANSWER HERE
 
+I think the percentage changes in a few cities are intriguing. For instance, Edmonston, Prince George's, is the city with the highest increase in the violent crime rate, and Crisfield, Somerset, has the highest increase in the property crime rate. On the other hand, Friendship Heights, Montgomery, is among cities with the highest decrease in violent crime rate with 100% change and is the only city that have 100% decrease in both violent and property crimes rate, meaning either there are 0 violent and property crimes in 2020 or something really went wrong with crime recording in that city. Another interesting angle is that among cities with 100% decrease in violent crimes, Cecilton, Cecil, is the only city where the property crime rate goes up with nearly 200% change. This drastic contrast could be a lede for the story as well.    
+
 ### Task 8: Tell the Best Story
 
 Write up a lede and nutgraf of a story with the _best_ story idea you've found in this assignment. The lede should be a single sentence that summarizes the most important information in the data. The nutgraf should be a paragraph that provides more context and explains why the data is important.
 
 ANSWER HERE
+
+Lede:
+
+Ocean City seems to be the most dangerous city in Maryland, with the highest rates in both violent and property crimes. 
+
+Nutgraf:
+
+In 2019, Ocean City, Worcester, had the second-highest rate in violent crime out of all Maryland cities, with about 13 cases per thousand people, before moving up to the highest in 2020 with nearly 24 cases per thousand people. Pattern went the same way with property crime, which Ocean City ranked at the top in the highest rate for 2019 and 2020, with about 104 and 121 cases per thousand people, respectively.   
 
 ### Task 9: Save Your Work and Put it on GitHub
 
