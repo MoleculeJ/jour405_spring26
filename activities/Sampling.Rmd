@@ -56,13 +56,41 @@ population_stats
 
 
 ### Task 6: Compare the sample and population statistics
+```{r}
+sample_stats <- sample_stats |>
+  mutate(data = "sample") |>
+  select(data, mean_age, sd_age)
+
+population_stats <- population_stats |>
+  mutate(data = "population") |>
+  select(data, mean_age, sd_age)
+
+comparison <- sample_stats |> bind_rows(population_stats)
+comparison
+```
 
 
 Compare the means and standard deviations. Are they similar? Go back and re-run the sampling and statistics calculations with a smaller sample size. How do the results change?
+
+```{r}
+smaller_sampled_data <- population |>
+  slice_sample(n = 20)
+
+smaller_sample_stats <- smaller_sampled_data |>
+  summarise(
+    mean_age = mean(age),
+    sd_age = sd(age)
+    )
+
+smaller_sample_stats <- smaller_sample_stats |>
+  mutate(data = "smaller sample") |>
+  select(data, mean_age, sd_age)
+
+comparison <- comparison |> bind_rows(smaller_sample_stats)
+comparison
+```
+
 ---
-
-
-
-
+With a smaller sample, the means I got are quite similar (population = 49.87, sample = 48.77, smaller sample = 49.95), but the SD is larger with the smaller sample (population = 17.51, sample = 18.91, smaller sample = 19.20) 
 ---
 When finished, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS.
