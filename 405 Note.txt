@@ -1,0 +1,32 @@
+***405 Note***
+
+2/17
+
+- When we talk about distribution, we pay attention to how the overall pattern of all data is distributed, not any specific individual data point. 
+
+- gg plot: gg stands for Grammar for Graphic 
+  
+- car_thefts |> 
+  ggplot() + 
+(วาดพื้นหลังเปล่า)
+  geom_histogram(aes(x = count), binwidth = 2) +
+(binwidth คือความกว้างของแท่ง ถ้าใช้ 1 มันจะไม่เชื่อมกัน เพราะ ถ้าค่า X ไหนไม่มี มันจะ blank ไป ทำให้ดูไม่เหมือน histagram)
+  geom_vline(aes(xintercept = mean(count)), color = "red", linetype = "dashed", size = 1) +
+(draw verticle line that marks the mean value / paint the line red / make it dashed / and the size 1)
+  geom_vline(aes(xintercept = mean(count) - sd(count)), color = "blue", linetype = "dashed", size = 1) +
+  geom_vline(aes(xintercept = mean(count) + sd(count)), color = "blue", linetype = "dashed", size = 1)
+
+- Normal distribution --> should use mean as a proper value to represent data / if not maybe median or other stats 
+
+
+
+
+
+
+
+
+
+
+
+
+

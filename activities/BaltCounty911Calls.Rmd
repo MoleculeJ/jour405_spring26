@@ -75,7 +75,12 @@ summary(daily_calls$call_count)
 Let's visualize the time series of daily calls. What patterns do you see? If you had to draw horizontal lines that would highlight unusual days, where would those lines be?
 
 ANSWER HERE
-
+---
+- The number of calls seemed to peak in early October and probably on New Year's Day. 
+- The other days with the usual high volume of calls seemed to cluster around Mar to May, and in July.
+- Hence, the line that could highlight the unusual days might slightly go up at the beginning of the year and then peak in July, October, and the new year.  
+- The number seemed to subside toward the beginning of 2023, which was quite a contrast to what happened at the beginning of 2022, when the number rose. 
+---
 ```{r daily-calls-plot}
 # Plot daily call volume
 ggplot(daily_calls, aes(x = date, y = call_count)) +
@@ -89,9 +94,6 @@ ggplot(daily_calls, aes(x = date, y = call_count)) +
   scale_y_continuous(labels = comma) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-
-
-
 
 ## Task 4: Calculating Z-Scores for Daily Call Volume
 
@@ -138,7 +140,9 @@ unusual_days |>
 Let's visualize these unusual days in the context of the full dataset. How do they differ from your answer on Task 3?
 
 ANSWER HERE
-
+---
+In task 3, I only spotted 7 days with an unusually high volume of calls just by looking, but with Z-score as the criterion, there are 11, and the visualization makes it clearer to notice.
+---
 ```{r plot-unusual-days}
 # Create a clean factor for the plot legend
 daily_calls <- daily_calls |>
@@ -208,7 +212,9 @@ ggplot(dow_summary, aes(x = day_of_week, y = avg_calls)) +
 We can also calculate z-scores that account for the day of the week pattern. How would you describe the day with the highest z-score without using the term "z-score"?
 
 ANSWER HERE
-
+---
+I think we could describe those days in terms of days with unusually high volume of calls, and instead of wording "z-score," we may use a percentage instead. As the range of 2 SDs includes about 95% of the dataset, we could describe days that have a z-score falling outside this range as "...there are only 5% percent of days that have this high or low volume of calls..."
+---
 ```{r day-of-week-z-scores}
 # Calculate day-of-week adjusted z-scores
 daily_calls <- daily_calls |>
@@ -299,4 +305,6 @@ top_outliers |> kable(digits = 2)
 Based on our z-score analysis, what are some potential angles for reporting? What would your next steps be and what would you tell an editor about your findings?
 
 ANSWER HERE
-
+---
+I think the promising angles here are days with the most Z-score, and the next step should be finding out what happened on those days. We could point out to the editor that these days may coincide with some significant events or could reveal some pattern about drug use or drug distribution, like July 14 and July 22, which have the second and third highest z-scores and were apart for just a week. 
+---
