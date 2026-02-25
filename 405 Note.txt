@@ -183,9 +183,42 @@ population <- tibble(
 sampled_data <- population |>
   slice_sample(n = 100)
 *---> randomly select 100 rows from the table 
- 
-
-
-
+...
+ggplot(accidents, aes(x = date, y = total)) +
+  geom_line(alpha = 0.5) +
+  geom_smooth(method = "loess", span = 0.1) +
+*---> this add smooth trend line on top of the plot / method = loess --> Locally Estimated (or Weighted) Regression. It fits many tiny regressions locally. And stitches them together into a smooth curve / span (0 - 1) controls how wiggly or smooth the curve is. / smaller span uses fewer nearby point = more wiggly / bigger span uses more data = smoother curve  
+  theme_minimal() +
+  labs(title = "Daily Accidents in Prince George's County",
+       x = "Date",
+       y = "Number of Accidents",
+       caption = "Source: Prince George's County Accident Data")
+...
+accidents <- accidents |>
+  mutate(
+    day_of_week = wday(date, label = TRUE),
+    month = floor_date(date, "month"),
+*---> this line round a date down to the beginning of the specific unit like round 03-15-2020 to 03-01-2020
+    year = year(date)
+  )
+...
+cat("Number of days with unusual accident counts:", nrow(unusual_days), 
+    "out of", nrow(accidents), "total days (", 
+    round(nrow(unusual_days)/nrow(accidents)*100, 2), "%)")
+*---> mean round this percentage to 2 decimal
+...
+ggplot(accidents, aes(x = date, y = total, color = abs(z_score) > 2)) +
+*---> In the color we establish the condition that if abs(z_score) > 2 it's true otherwise it's false
+  geom_point(alpha = 0.5) +
+  scale_color_manual(values = c("gray", "red"), 
+                     name = "Unusual Value",
+                     labels = c("Normal", "Unusual")) +
+*---> this line assign color code based on established condition/ the first in order for data that is false and second for the data that is true
+  theme_minimal() +
+  labs(title = "Daily Accidents with Unusual Days Highlighted",
+       subtitle = "Unusual days have z-scores with absolute values > 2",
+       x = "Date",
+       y = "Number of Accidents",
+       caption = "Source: Prince George's County Accident Data")
 
 
