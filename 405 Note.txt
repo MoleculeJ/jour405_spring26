@@ -5,7 +5,8 @@
 - When we talk about distribution, we pay attention to how the overall pattern of all data is distributed, not any specific individual data point. 
 
 - gg plot: gg stands for Grammar for Graphic 
-  
+ 
+[CODING PART]
 - car_thefts |> 
   ggplot() + 
 (วาดพื้นหลังเปล่า)
@@ -18,13 +19,171 @@
 
 - Normal distribution --> should use mean as a proper value to represent data / if not maybe median or other stats 
 
+-----------------------------------
 
+2/24
 
+- 2 in 3 of all data fall into +1 -1 SD
+- 95% of all data fall into +2 -2 SD / so anything that beyond this is unusual / potential outliers 
+- Z score allow you to compare the score of player to their peers / measure the distance from the mean / identify outliers and how far they are from mean 
 
-
-
-
-
+[CODING PART]
+# Check for any missing values
+colSums(is.na(calls_data))
+...
+# Check the date range in our data
+min_date <- min(calls_data$date)
+max_date <- max(calls_data$date)
+cat("Data ranges from", min_date, "to", max_date)
+*--->  cat means concatenate and print / it links text and variables together 
+...
+# Count calls per day
+daily_calls <- calls_data |>
+  count(date, name = "call_count")
+...
+# Basic summary statistics for daily call volume
+summary(daily_calls$call_count)
+*--->  this will show min / 1st q / median / mean / 3rd q / max 
+...
+# Plot daily call volume
+ggplot(daily_calls, aes(x = date, y = call_count)) +
+  geom_line(color = "darkblue", alpha = 0.7) +
+  geom_point(color = "darkblue", alpha = 0.5, size = 1) +
+*--->  alpha means the transparency of the line or point 
+  theme_minimal() +
+  labs(title = "Daily 911 Overdose Calls in Baltimore County",
+       x = "Date",
+       y = "Number of Calls",
+       caption = "Source: Baltimore County 911 Call Data") +
+  scale_y_continuous(labels = comma) +
+*--->  scale_y_continuous() → you're formatting a continuous numeric axis
+*--->  labels = comma → format numbers with commas
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+*---> axis.text.x → the text on the x-axis
+*--->  element_text() → modifies text appearance
+*---> angle = 45 → rotate text 45 degrees
+*--->  hjust = 1 → right-align the text
+...
+# Calculate z-scores for daily call counts
+daily_calls <- daily_calls |>
+  mutate(
+    mean_calls = mean(call_count),
+    sd_calls = sd(call_count),
+    z_score = (call_count - mean_calls) / sd_calls
+  )
+---> the formula for z-score is "(the data point - mean)/SD" 
+...
+daily_calls |>
+  select(date, call_count, z_score) |>
+  head(10) |>
+  kable(digits = 2)
+*--->  kable means making a nice table (part of knitr library) 
+*---> digits means the decimal 
+...
+unusual_days <- daily_calls |>
+  filter(abs(z_score) > 2) |>
+  arrange(desc(abs(z_score)))
+*--->  abs means absolute value 
+...
+unusual_days |>
+  group_by(unusual_type = if_else(z_score > 0, "Unusually High", "Unusually Low")) |>
+*--->  create new column call "unusual_type containing "Unusually High" if value in z score column > 0 and "Unusually Low" if otherwise and then group these 2 together and count  
+  summarise(count = n())
+...
+# Plot with unusual days highlighted
+ggplot(daily_calls, aes(x = date, y = call_count, color = call_volume_type)) +
+  geom_line(color = "gray70") +
+  geom_point(size = 2) +
+  scale_color_manual(values = c("Normal" = "gray50", 
+                               "Unusually High" = "red", 
+                               "Unusually Low" = "blue")) +
+  theme_minimal() +
+  labs(title = "Daily 911 Overdose Calls with Unusual Days Highlighted",
+       subtitle = "Unusual days have z-scores with absolute values > 2",
+       x = "Date",
+       y = "Number of Calls",
+       color = "Call Volume",
+       caption = "Source: Baltimore County 911 Call Data") +
+  scale_y_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+...
+daily_calls <- daily_calls |>
+  mutate(
+    day_of_week = wday(date, label = TRUE)
+  )
+*--->  wday changes date to weekdays (1 2 3 4...) and label change number to the name of day (Sun Mon Tue...)
+...
+# Calculate average calls by day of week
+dow_summary <- daily_calls |>
+  group_by(day_of_week) |>
+  summarise(
+    avg_calls = mean(call_count),
+    median_calls = median(call_count),
+    min_calls = min(call_count),
+    max_calls = max(call_count)
+  ) |>
+  arrange(match(day_of_week, c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")))
+*---> the last line mean match values in the column "day_of_week) with the order of data in this c(..........)
+# Plot calls by day of week
+ggplot(dow_summary, aes(x = day_of_week, y = avg_calls)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = round(avg_calls, 1)), vjust = -0.5) +
+*---> this line mean add text label using value from "avg_calls" and round them up to 1 decimal, vjust = position of the text / 0 mean centered on the bar top / 1 mean inside the bar / so -0.5 means moving upward a little bit 
+  theme_minimal() +
+  labs(title = "Average 911 Overdose Calls by Day of Week",
+       x = "Day of Week",
+       y = "Average Number of Calls",
+       caption = "Source: Baltimore County 911 Call Data") +
+  theme(axis.text.x = element_text(angle = 0))
+...
+# Calculate day-of-week adjusted z-scores
+daily_calls <- daily_calls |>
+  group_by(day_of_week) |>
+*---> we use group by first to tell R to calculate within the small sub-group like find mean of Mon not mean of the entire dataset
+  mutate(
+    dow_mean = mean(call_count),
+    dow_sd = sd(call_count),
+    dow_z_score = (call_count - dow_mean) / dow_sd
+  ) |>
+  ungroup()
+*---> we ungroup to tell R that we're done calculate stuff in the sub-group and back to normal for future action 
+...
+# Add month and year for seasonal analysis
+daily_calls <- daily_calls |>
+  mutate(
+    month = month(date, label = TRUE),
+*---> this line change date to month and label them by name
+    year = year(date)
+  )
+...
+# Plot calls by month
+ggplot(monthly_summary, aes(x = month, y = avg_calls, group = 1)) +
+*---> group 1 draw the line to connect each point to become 1 line 
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Average 911 Overdose Calls by Month",
+       x = "Month",
+       y = "Average Number of Calls",
+       caption = "Source: Baltimore County 911 Call Data")
+...
+# Show a rolling 7-day average to better see trends
+daily_calls <- daily_calls |>
+  arrange(date) |>
+  mutate(rolling_avg_7day = zoo::rollmean(call_count, k = 7, fill = NA))
+*---> This is for creating a trend line / zoo::rollmean() pull function "rollmean" from package "zoo" / it compute the moving (rolling) average of each data point / by taking a period of k consecutive data points / ex. for each data point, calculate the mean of that data + 6 previous and following data / fill = NA for the data point that doesn't have 6 previous or 6 following (first 3 and last 3 at the edge) 
+...
+set.seed(42)
+*---> this line make every time we sample, we will get the same randomized number / if not include this line, every time we random, we will get a different set of number / 42 is just a programming culture (number from a book "The Hitchhiker’s Guide to the Galaxy" / any integer would work   
+population <- tibble(
+  age = sample(18:80, 1000, replace = TRUE)
+)   
+*---> this mean get 1000 randomized number that range 18 to 80 and allow them to have repeated no. 
+...
+sampled_data <- population |>
+  slice_sample(n = 100)
+*---> randomly select 100 rows from the table 
+ 
 
 
 
