@@ -220,5 +220,38 @@ ggplot(accidents, aes(x = date, y = total, color = abs(z_score) > 2)) +
        x = "Date",
        y = "Number of Accidents",
        caption = "Source: Prince George's County Accident Data")
+...
+empirical <- tibble(
+  range = c("Within 1 SD", "Within 2 SD", "Within 3 SD"),
+  lower = c(mean_sal - sd_sal, mean_sal - 2 * sd_sal, mean_sal - 3 * sd_sal),
+  upper = c(mean_sal + sd_sal, mean_sal + 2 * sd_sal, mean_sal + 3 * sd_sal),
+  expected_pct = c(68, 95, 99.7),
+  actual_count = c(
+    sum(wh_paid$SALARY >= (mean_sal - sd_sal) & wh_paid$SALARY <= (mean_sal + sd_sal)),
+    sum(wh_paid$SALARY >= (mean_sal - 2 * sd_sal) & wh_paid$SALARY <= (mean_sal + 2 * sd_sal)),
+    sum(wh_paid$SALARY >= (mean_sal - 3 * sd_sal) & wh_paid$SALARY <= (mean_sal + 3 * sd_sal))
+  ),
+*---> create actual_count column that contain 3 values that match each condition 
+  actual_pct = round((actual_count / total_n) * 100, 1)
+)
+...
+Compare what the normal distribution *predicts* to what we actually *see*.
 
+bins <- tibble(
+  category = c("Below $60k", "$60k-$90k", "$90k-$120k", "$120k-$150k", "Above $150k"),
+  lower = c(-Inf, 60000, 90000, 120000, 150000),
+  upper = c(60000, 90000, 120000, 150000, Inf)
+) |>
+  mutate(
+    expected_pct = pnorm(upper, mean = mean_sal, sd = sd_sal) - pnorm(lower, mean = mean_sal, sd = sd_sal),
+    expected_count = round(expected_pct * total_n, 1),
+    observed_count = c(
+      sum(wh_paid$SALARY < 60000),
+      sum(wh_paid$SALARY >= 60000 & wh_paid$SALARY < 90000),
+      sum(wh_paid$SALARY >= 90000 & wh_paid$SALARY < 120000),
+      sum(wh_paid$SALARY >= 120000 & wh_paid$SALARY < 150000),
+      sum(wh_paid$SALARY >= 150000)
+    ),
+    difference = observed_count - expected_count
+  )
 
