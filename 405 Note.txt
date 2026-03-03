@@ -254,4 +254,71 @@ bins <- tibble(
     ),
     difference = observed_count - expected_count
   )
+----------------------------------------------------------------------
 
+3/3
+- ยิ่งสุ่ม sample มากจำนวนเท่าไหร่ sample นั้นจะยิ่งเข้าใกล้สัดส่วนของประชากรจริงมากขึ้นเท่านั้น 
+- This is an exercise about the central limit theorem. The central limit theorem states that the sampling distribution of the mean of any independent, random variable will be normal or nearly normal, if the sample size is large enough. 
+
+[CODING PART]
+ces <- ces |>
+  mutate(unaffiliated = trad %in% c("Atheist", "Agnostic", "Nothing in Particular"))
+*---> This mean make new column name unaffiliated and return TRUE if the values in the trad column are in this list %in% c(..........), otherwise return FALSE
+...
+proportion <- mean(ces$unaffiliated)
+*---> if the column has TRUE and FALSE values, when we run mean on it, R will see TRUE as 1 and FALSE as 0, so it well calculate the proportion (the mean) of TRUE (as it see as 1) for you!!
+...
+simulate_polls <- function(data, sample_size, n_simulations = 1000) {
+*---> We gonna assign a function to "simulate_polls" / This function will have 3 arguments 1) "data" dataframe that we want this function to run on 2) "sample_size" the size of rows we want this function to sample from all rows in dataframe 3) "n_simulations = 1000" = how many times we want this function run. It will be 1000 times as default if we not fill other number. 
+  proportions <- replicate(n_simulations, {
+*---> we gonna replicate ทำซ้ำสิ่งนี้แล้ว store it result in "proportions" / n_simulations เราจะทำซ้ำกี่ครั้ง (1000 ถ้าไม่กรอกเลขอื่นใน argument ที่ 3) /  
+    s <- data |> sample_n(sample_size)
+*---> เราจะเอา dataframe (data ที่ให้กรอก) มา sample กรองเอา ..n.. แถวตาม sample_size ที่ให้กรอก แล้วเก็บมันไว้ใน s
+    mean(s$unaffiliated)
+*---> แล้วเราจะหาสัดส่วน TRUE ในคอลัมน์ unaffiliated ในตาราง s
+  })
+  tibble(proportion = proportions, sample_size = sample_size)
+*---> สุดท้ายเราจะสร้างตาราง ที่มี 2 columns / คอลัมน์แรกชื่อ proportion แล้วเอาค่า proportions มาใส่ / คอลัมน์ที่ 2 ชื่อ sample_size แล้วเอาค่า sample_size มาใส่ / และฟังก์ชั่นจะ run 1000 ครั้ง แสดงว่าอีตารางนี้ ต้องมี 1000 แถว 
+}
+...
+simulations_500 <- simulate_polls(ces, 500)
+*---> ตัวอย่างการใช้ คือ เราจะ run function ชื่อ simulate_polls บท datafram ชื่อ ces โดยกรองเอา 500 แถว --> หาสัดส่วนของ true ในคอลัมน์ unaffiliated --> ทำแบบนี้ 1000 ครั้ง --> แล้วสร้างตารางโชว์ผล 1000 แถว เก็บไว้ใน simulations_500
+...
+simulations_all <- bind_rows(simulations_50, simulations_500) |> 
+  mutate(sample_size = paste("n =", sample_size))
+*---> ในคอลัมน์ sample_size เติมข้อความ "n =" และก็ตามด้วยค่าเดิม 
+...
+ggplot(simulations_all, aes(x = proportion)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+*---> bins คือ histogram เป็นช่วงๆ ถ้าเลขเยอะ (ช่วงสั้น) ดีเทลจะละเอียด แต่จะไม่สวย มันจะเป็นขยัก ๆ ถ้าเลขน้อย (ช่วงกว้าง) อาจจะสวย สมูธ แต่รายละเอียดน้อย 
+  geom_vline(xintercept = proportion, color = "red", linetype = "dashed", linewidth = 1) +
+*---> ดูตรง proportion / proportion ใน code นี้มีสองที่ ที่แรกคือชื่อคอลัมน์ใน simulations_all ถ้าเราใส่ aes(....) มันจะมองหาคอลัมน์ชื่อนี้ในตาราง แต่ถ้าเราไม่ใส่ มันจะมองค่าชื่อถือ ใน ฐานะ object ที่วางอยู่ที่อื่นใน workspace ของเรา  
+  facet_wrap(~sample_size) +
+*---> จัดกลุ่ม histogram ตามค่าในคอลัมน์ sample_size ถ้ามี 2 ค่า เราก็จะได้ 2 histrogram แยกกัน 
+  labs(
+    title = "Distribution of Sample Estimates: Share Religiously Unaffiliated",
+    subtitle = "Red line = true population proportion. Each histogram shows 1,000 simulated polls.",
+    x = "Sample Proportion",
+    y = "Count",
+    caption = "Source: 2024 Cooperative Election Study"
+  ) +
+  theme_minimal()
+...
+wh_paid |>
+  ggplot(aes(x = SALARY)) +
+  geom_histogram(binwidth = 10000, fill = "brown", color = "black") +
+*---> some notable differences / bin คือ บอกให้ r แบ่ง x-axis range เป็นบาร์ที่มีขนาดเท่ากัน n อัน เช่น ถ้า range คือ เงิน 30,000 - 200,000 และใส่ว่า bin = 30 r จะแบ่ง range ออกเป็น 30 แท่งที่มีขนาดเท่ากัน / แต่ถ้าเป็น binwidth คือกำหนดมาเลยว่าจะให้แท่งนึง มีค่าเท่าไหร่ เช่น ให้มีค่า 10,000 แล้วจำนวนเท่าไหร่ก็คือแล้วแต่ range  
+  geom_vline(aes(xintercept = mean(SALARY)), color = "orange", linetype = "dashed", size = 1) +
+  geom_vline(aes(xintercept = mean(SALARY) + sd(SALARY)), color = "green", linetype = "dashed", size = 1) +
+  geom_vline(aes(xintercept = mean(SALARY) - sd(SALARY)), color = "green", linetype = "dashed", size = 1) 
+
+-----------------------
+MIDTERM 
+- including sampling 
+- Exam will be an R notebook 
+- Full access to your homework and Note เย้!!!
+- Mr. Willis will give quizzes / not specific task like what to calculate to get what / but general questions of what he want as results 
+- Not gonna give any code on the exam notebook 
+- Go through all the activities and homework / Re run it again / ทำโพยมาเลยค่ะ 
+- Entire class time for the exam 
+-  Final Q will not be in code but it's gonna be s.t. like you have this info how do you gonna use the info to approach specific circumstances    

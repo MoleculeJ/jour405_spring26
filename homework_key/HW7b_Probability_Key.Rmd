@@ -1,0 +1,190 @@
+---
+title: "HW7b - Probability and the Normal Distribution"
+---
+
+In this assignment, you'll build on your z-score skills to answer probability questions using the normal distribution. You'll return to the White House salaries data and use it to answer the kinds of "what are the chances?" questions that come up in journalism all the time. This sets the stage for sampling, which we'll cover next.
+
+### Task 1: Load the tidyverse and the data (1 point)
+
+Load the tidyverse and the White House salaries data from https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/white_house_salaries_2025.csv
+
+```{r}
+library(tidyverse)
+
+wh_salaries <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/white_house_salaries_2025.csv")
+```
+
+### Task 2: Filter and summarize (2 points)
+
+You may remember from HW3 that some White House staffers have a salary of $0. Let's filter those out and focus on paid employees, saving the result to a new dataframe called `wh_paid`. Then calculate the mean, median and standard deviation of the salary column.
+
+```{r}
+wh_paid <- wh_salaries |>
+  filter(SALARY > 0)
+
+wh_paid |>
+  summarize(
+    mean_salary = mean(SALARY),
+    median_salary = median(SALARY),
+    sd_salary = sd(SALARY)
+  )
+```
+
+Now create a histogram of the paid salaries with a vertical line for the mean and two more for ±1 standard deviation, similar to what you did in HW6 with Spotify data.
+
+```{r}
+wh_paid |>
+  ggplot(aes(x = SALARY)) +
+  geom_histogram(binwidth = 10000, fill = "steelblue", color = "black") +
+  geom_vline(aes(xintercept = mean(SALARY)), color = "red", linetype = "dashed", linewidth = 1) +
+  geom_vline(aes(xintercept = mean(SALARY) + sd(SALARY)), color = "orange", linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(SALARY) - sd(SALARY)), color = "orange", linetype = "dashed") +
+  labs(
+    title = "Distribution of White House Salaries (Paid Staff Only)",
+    x = "Annual Salary ($)",
+    y = "Number of Employees"
+  )
+```
+
+**Describe the shape of the distribution. Is it roughly normal? Skewed? Where do most salaries cluster?**
+
+The distribution has a roughly bell-shaped center but is not perfectly normal. Most salaries cluster between $60,000 and $150,000, with the mean around $111,000 and the median around $101,500. The mean being about $10,000 higher than the median tells us the distribution is right-skewed — pulled up by high earners near the federal maximum of $225,700. There's also a notable floor: almost no one makes below $60,000, and there's a big cluster in the $60,000-$90,000 range. Despite the skew, the data is close enough to a bell curve to use the normal distribution as a useful (if imperfect) model.
+
+### Task 3: The Empirical Rule (3 points)
+
+The empirical rule (also called the 68-95-99.7 rule) says that for a normal distribution:
+- About 68% of data falls within 1 standard deviation of the mean
+- About 95% falls within 2 standard deviations
+- About 99.7% falls within 3 standard deviations
+
+Let's test this. Calculate the salary ranges for 1, 2, and 3 standard deviations from the mean, then count how many employees actually fall in each range.
+
+```{r}
+mean_sal <- mean(wh_paid$SALARY)
+sd_sal <- sd(wh_paid$SALARY)
+total_n <- nrow(wh_paid)
+
+empirical <- tibble(
+  range = c("Within 1 SD", "Within 2 SD", "Within 3 SD"),
+  lower = c(mean_sal - sd_sal, mean_sal - 2 * sd_sal, mean_sal - 3 * sd_sal),
+  upper = c(mean_sal + sd_sal, mean_sal + 2 * sd_sal, mean_sal + 3 * sd_sal),
+  expected_pct = c(68, 95, 99.7),
+  actual_count = c(
+    sum(wh_paid$SALARY >= (mean_sal - sd_sal) & wh_paid$SALARY <= (mean_sal + sd_sal)),
+    sum(wh_paid$SALARY >= (mean_sal - 2 * sd_sal) & wh_paid$SALARY <= (mean_sal + 2 * sd_sal)),
+    sum(wh_paid$SALARY >= (mean_sal - 3 * sd_sal) & wh_paid$SALARY <= (mean_sal + 3 * sd_sal))
+  ),
+  actual_pct = round((actual_count / total_n) * 100, 1)
+)
+
+empirical
+```
+
+**How closely does the data follow the empirical rule? What does any deviation tell you about the distribution?**
+
+The actual percentages show meaningful deviations from the expected values. The 1 SD range captures about 65.9% of employees (vs. the expected 68%), the 2 SD range captures about 91.2% (vs. 95%), and the 3 SD range captures 100% (vs. 99.7%). The fact that the 1 SD and 2 SD ranges capture fewer employees than expected tells us the distribution has heavier tails than a perfect normal curve — there are more people in the extremes (both high and low relative to the mean) than the bell curve predicts. Meanwhile, 3 SD captures everyone because the salary range is bounded (no one makes more than $225,700). This is a great example of why the empirical rule is a guideline, not a guarantee: real-world data often deviates from the theoretical normal distribution.
+
+### Task 4: From z-scores to probability with pnorm() (4 points)
+
+Here's where z-scores become really powerful. In HW7, you used z-scores to identify unusual days. Now you'll use them to calculate probabilities.
+
+Your editor asks: **"What's the probability that a randomly selected White House employee makes more than $150,000?"**
+
+To answer this:
+1. Calculate the z-score for $150,000
+2. Use `pnorm()` to find the probability. `pnorm()` gives you the area under the normal curve to the LEFT of a z-score — that is, the probability of being BELOW that value.
+3. Subtract from 1 to get the probability of being ABOVE $150,000
+4. Check your answer against the actual data
+
+```{r}
+target <- 150000
+z_score <- (target - mean_sal) / sd_sal
+z_score
+
+prob_less <- pnorm(z_score)
+prob_more <- 1 - prob_less
+prob_more
+
+# Check against actual data
+actual_prob <- sum(wh_paid$SALARY > 150000) / total_n
+actual_prob
+```
+
+**Write a sentence stating this probability in plain English. How does the normal approximation compare to the actual percentage?**
+
+There is approximately a 17% chance (based on the normal model) that a randomly selected paid White House employee makes more than $150,000 per year. The actual percentage is about 18% — close, but slightly higher than the model predicts. This makes sense: the White House has a cluster of senior staffers earning at or near the $225,700 federal maximum, creating a slightly heavier right tail than a perfect normal distribution. This is a good reminder that the normal distribution is a model, not a perfect mirror of reality — but it gets us in the right ballpark.
+
+### Task 5: Probability between two values (3 points)
+
+Now your editor asks: **"What percentage of White House employees make between $80,000 and $120,000?"**
+
+You'll need to calculate z-scores for both boundaries, use `pnorm()` for each, and subtract to find the probability between them.
+
+```{r}
+z_lower <- (80000 - mean_sal) / sd_sal
+z_upper <- (120000 - mean_sal) / sd_sal
+
+prob_between <- pnorm(z_upper) - pnorm(z_lower)
+prob_between
+
+# Verify with actual data
+actual_between <- sum(wh_paid$SALARY >= 80000 & wh_paid$SALARY <= 120000) / total_n
+actual_between
+```
+
+**Interpret this result. What does this "middle range" tell us about the White House salary structure?**
+
+The normal model predicts about 37% of employees fall in this range, while the actual figure is about 33%. Both tell the same story: roughly a third of paid White House employees make between $80,000 and $120,000, making this the most densely populated salary range. This represents the "middle class" of White House staff — likely mid-career professionals below the senior ranks. The slight overestimate by the normal model may reflect the fact that there are actually more employees in the $60-80k range than the bell curve expects, pulling the center of mass slightly lower.
+
+### Task 6: Expected vs. observed (3 points)
+
+Let's compare what the normal distribution *predicts* to what we actually *see*. This idea — comparing expected to observed — is one you'll use again later in the course.
+
+Create these salary bins and calculate the expected count (from the normal distribution) and the observed count (from the actual data) for each:
+
+```{r}
+bins <- tibble(
+  category = c("Below $60k", "$60k-$90k", "$90k-$120k", "$120k-$150k", "Above $150k"),
+  lower = c(-Inf, 60000, 90000, 120000, 150000),
+  upper = c(60000, 90000, 120000, 150000, Inf)
+) |>
+  mutate(
+    expected_pct = pnorm(upper, mean = mean_sal, sd = sd_sal) - pnorm(lower, mean = mean_sal, sd = sd_sal),
+    expected_count = round(expected_pct * total_n, 1),
+    observed_count = c(
+      sum(wh_paid$SALARY < 60000),
+      sum(wh_paid$SALARY >= 60000 & wh_paid$SALARY < 90000),
+      sum(wh_paid$SALARY >= 90000 & wh_paid$SALARY < 120000),
+      sum(wh_paid$SALARY >= 120000 & wh_paid$SALARY < 150000),
+      sum(wh_paid$SALARY >= 150000)
+    ),
+    difference = observed_count - expected_count
+  )
+
+bins |> select(category, expected_count, observed_count, difference)
+```
+
+**Where does reality differ most from what the normal distribution predicts? What might explain those differences?**
+
+The biggest difference is in the "Below $60k" bin: the normal model expects about 40 employees there, but only 2 actually earn below $60,000. Meanwhile, the "$60k-$90k" bin has far more employees than expected (about 151 vs. the predicted 78). This tells us something important about how White House salaries actually work: there's essentially a salary floor around $60,000, and a large number of positions are clustered in the $60-90k range — likely entry-level and junior staff positions. The "Above $150k" bin also has more employees than expected (81 vs. 67), reflecting the cluster of senior staffers at or near the federal maximum. The normal distribution is a useful model for answering probability questions, but it doesn't capture these structural realities — a salary floor, a concentration of entry-level positions, and a ceiling — perfectly.
+
+### Task 7: Story pitch (4 points)
+
+Based on your probability analysis, write a headline and lede for a story about White House salaries. Your lede should incorporate at least one probability or percentage you calculated.
+
+Then write 2-3 sentences describing how you would use probability thinking to advance this story — what would you compare these probabilities to, and what additional analysis would help?
+
+**ANSWER:**
+
+**Headline:**
+"Most White House Staffers Earn Six Figures, but a Select Few Command Top Dollar"
+
+**Lede:**
+Nearly one in five paid White House employees earns more than $150,000 a year, with the typical staffer making about $101,500, according to an analysis of the administration's 2025 salary disclosures. But the distribution of pay reveals a sharp divide: while the largest group of employees clusters in the $60,000-to-$90,000 range, a small tier of senior officials earns at or near the federal maximum of $225,700 — and almost no one makes less than $60,000.
+
+**Story development:**
+To advance this story, I would compare these salary probabilities to previous administrations to see whether the current White House pays more or fewer staffers at the top. I'd also compare the White House distribution to other federal agencies to understand whether this pay structure is typical for government work or unusually top-heavy. Finally, breaking down the probabilities by job title or status (Employee vs. Detailee) could reveal which roles are most likely to be in the highest-paid tier.
+
+### Task 8: Save Your Work and Put it on GitHub
+
+Save this notebook, then commit it to your local repository. Push the changes to your GitHub repository and submit the URL for this file in ELMS.

@@ -34,8 +34,8 @@ Now create a histogram of the paid salaries with a vertical line for the mean an
 
 ```{r}
 wh_paid |>
-  ggplot() +
-  geom_histogram(aes(x = SALARY)) +
+  ggplot(aes(x = SALARY)) +
+  geom_histogram(binwidth = 10000, fill = "brown", color = "black") +
   geom_vline(aes(xintercept = mean(SALARY)), color = "orange", linetype = "dashed", size = 1) +
   geom_vline(aes(xintercept = mean(SALARY) + sd(SALARY)), color = "green", linetype = "dashed", size = 1) +
   geom_vline(aes(xintercept = mean(SALARY) - sd(SALARY)), color = "green", linetype = "dashed", size = 1) 
