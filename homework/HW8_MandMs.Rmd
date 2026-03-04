@@ -5,27 +5,64 @@ title: "HW8_MandMs"
 In this assignment, you'll be picking up where you left off with the M&Ms activity. You'll load the data and perform some basic statistical analysis. Follow the steps below to complete the assignment.
 
 ### Task 1: Load the tidyverse
-
-
+```{r}
+library(tidyverse)
+```
 ### Task 2: Load the M&Ms dataset from https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/mandms.csv
-
-
+```{r}
+mm <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/mandms.csv")
+```
 ### Task 3: Sample 5 rows of data from the dataset
+```{r}
+set.seed(42)
 
+mm_sample_5 <- mm |>
+  sample_n(5)
+```
 
 ### Task 4: Calculate the mean age and standard deviation of the sample, using either the blue or white number of M&Ms
+```{r}
+mm_sample_5_mean <- mean(mm_sample_5$red)
+mm_sample_5_mean
 
-
+mm_sample_5_sd <- sd(mm_sample_5$red)
+mm_sample_5_sd
+```
 ### Task 5: Calculate the mean age and standard deviation of the population, using the same measure as in Task 4
+```{r}
+mm_mean <- mean(mm$red)
+mm_mean
 
-
+mm_sd <- sd(mm$red)
+mm_sd
+```
 ### Task 6: Compare the sample and population statistics
 
 Compare the two sets of means and standard deviations. Are they similar?
+```{r}
+mm_comparison <- tibble(
+  data = "mm_population",
+  mean = mm_mean,
+  sd = mm_sd
+)
+
+mm_comparison_sample <- tibble(
+  data = "mm_sample_5",
+  mean = mm_sample_5_mean,
+  sd = mm_sample_5_sd
+)
+
+mm_comparison <- bind_rows(mm_comparison, mm_comparison_sample)
+mm_comparison
+```
+
 
 ### Task 7: Describe the results
 
 Write a few sentences about what you found in the data. What does this tell you about the M&Ms dataset and about the act of random sampling?
 
-
+ANSWER
+---
+The mean of red M&M in the sample of 5 rows is 79.60, which is quite different from that of red M&M from the original data set, 72.98. Similarly, the standard deviation of the sample is 10.06, while that of the original dataset is 16.46. This means that in the sample of 5 rows, I tend to get more red M&M than most of the rows in the original data, and it could mean that the sample size of rows I randomly picked is small, so the SD might fluctuate a lot from that of the original dataset. 
+---
 When finished, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS.
