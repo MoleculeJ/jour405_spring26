@@ -155,6 +155,6 @@ I estimate that the proportion of White Evangelical respondents in a sample size
 
 ANSWER HERE
 ---
-I would want to know the actual number of the entire population (and the proportion of White Evangelical to confirm that it's a really small subgroup.) Based on this assignment, the White Evangelical seem to be a really small subgroup so if we know the size of real population, we could consider that whether 400 people is too small sample size or not, because if it's too small, there is a high chance that any information about the White Evangelical in this sample group may not be able to represent this subgroup in real population, so it may not be reliable enough to be reported.       
+I would want to know if this sample is drawn randomly and the actual number of the entire population (and the proportion of White Evangelical to confirm that it's a really small subgroup.) Based on this assignment, the White Evangelical seem to be a really small subgroup so if we know the size of real population, we could consider that whether 400 people is too small sample size or not, because if it's too small, there is a high chance that any information about the White Evangelical in this sample group may not be able to represent this subgroup in real population, so it may not be reliable enough to be reported.       
 ---
 When finished, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS.
