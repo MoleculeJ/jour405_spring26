@@ -188,7 +188,7 @@ Write 3–4 sentences for each of the following questions:
 
 ### Question A: Given that the mean is 187 and standard deviation is 42, which statistical measures would you prioritize using and why? (7 points)
 ---
-I would use Z-Scores to find the pools that may underperform, as the SD is not too high, that mean most of the observations are clustered near the mean at the center, so Z-Scores that are higher or lower than 2 could be rare, which could be potential outliers. 
+I would use Z-Scores to find the pools that may be underperformed, as the SD is not too high, that mean most of the observations are clustered near the mean at the center, so Z-Scores that are higher or lower than 2 could be rare, which could be potential outliers. 
 ---
 
 ### Question B: How would you use z-scores to identify which pools are genuinely underperforming, and why is that more useful than simply ranking pools by raw attendance? (7 points)
