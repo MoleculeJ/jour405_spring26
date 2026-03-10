@@ -132,7 +132,7 @@ wmata_daily_91 |>
   )
 ```
 ---
-For the bus, the mean and SD of the sample of 91 days are slightly higher than those of the population, with a difference of 3215 for the mean and 6442.29 for the SD. Similarly, for rail, the mean and SD of the sample of 9 days are also a little bit higher compared to those of the population, with a 6306 difference for the mean and 8394.4 in SD. This could suggest that 91 days is a large enough sample size, as its mean and SD are quite close to those of the real population.   
+For the bus, the mean and SD of the sample of 91 days are slightly higher than those of the population, with a difference of 3215 for the mean and 6442.29 for the SD. Similarly, for rail, the mean and SD of the sample of 91 days are also a little bit higher compared to those of the population, with a 6306 difference for the mean and 8394.4 in SD. This could suggest that 91 days is a large enough sample size, as its mean and SD are quite close to those of the real population.   
 ---
 
 ### Task 10: Write 2–3 sentences: What do the unusual days in your z-score analysis suggest as story leads? (3 points)
