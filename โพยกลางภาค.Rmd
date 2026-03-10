@@ -1,0 +1,1188 @@
+---
+title: "โพยกลางภาค"
+---
+
+โหลด Tidyverse มาก่อน
+
+```{r}
+library("tidyverse")
+```
+
+*หาค่าเฉลี่ยทั่วไป*
+
+**HW2 PG Crime**
+
+```{r}
+pg_crime <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/pg_crime_totals_2024.csv")
+```
+
+```{r}
+pg_crime[is.na(pg_crime)] <- 0 
+#เปลี่ยน na ในตารางให้กลายเป็น 0
+
+pg_crime_averages <- pg_crime |>
+  mutate(
+    total_incidents = Jan + Feb + Mar + Apr + May + Jun + Jul + Aug + Sep + Oct + Nov + Dec 
+  ) |>
+  mutate(
+    average_incidents = total_incidents/12
+  )
+#หาค่าเฉลี่ยของอาชญากรรมรายเดือน 
+```
+
+เรามีทฤษฎีว่า อาชญากรรมมักเกิดในฤดูร้อน เราเลยทดลองหาความต่างระหว่างอาชญากรรมในเดือน June July and August เทียบกับ่าเฉลี่ยทั้งหมด
+
+```{r}
+summer_crime_averages <- pg_crime_averages |>
+  mutate(june_change = ((Jun - average_incidents)/average_incidents)*100) |>
+  mutate(july_change = ((Jul - average_incidents)/average_incidents)*100) |>
+  mutate(august_change = ((Aug - average_incidents)/average_incidents)*100) 
+```
+
+**UMD Fees**
+
+หาค่าเฉลี่ยของ fee ที่นักเรียนแต่ละชั้นปีต้องจ่าย
+
+```{r}
+comp <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/class_composition.csv")
+
+comp |>
+  summarize(
+    mean_first = mean(first_year),
+    mean_soph = mean(sophomore),
+    mean_junior = mean(junior),
+    mean_senior = mean(senior),
+    mean_grad = mean(grad)
+  )
+```
+
+*หา Mean Median Max Min*
+
+**HW3 White House Salaries**
+
+```{r}
+wh_salaries <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/white_house_salaries_2025.csv")
+```
+
+```{r}
+wh_salaries |>
+  summarise(
+    mean_salary = mean(SALARY),
+    median_salary = median(SALARY)
+  )
+```
+
+```{r}
+wh_salaries |>
+  summarise(
+    mean_salary = mean(SALARY),
+    median_salary = median(SALARY),
+    min_salary = min(SALARY),
+    max_salary = max(SALARY),
+  )
+```
+
+*Rate / Percentage Change / Percentile / Quartile / IQR*
+
+**HW 4 MD City Crime**
+
+```{r}
+library(janitor)
+#เอามาเปลี่ยนชื่อคอลัมน์
+```
+
+```{r}
+md_cities <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/md_cities_crime_2019_2020.csv")
+```
+
+อันนี้เราจะหาอัตราการเกิดของอาชญากรรมแต่ละประเภทต่อจำนวนประชากร .... คน Unit Rate คือต้องใช้วิจารณญาณเลือกเอาว่าแบบไหนเล่าแล้วเข้าใจง่ายสุด วิธีคิดคือ เอา จำนวนอาชญากรรม / จำนวนประชากร แล้ว x Unit Rate จะ 100 คน 1000 คน ก็เลือกเอา
+
+```{r}
+md_cities_rates <- md_cities |>
+  mutate(violent_rate_2019 = violent2019/pop2019 *1000) |>
+  mutate(property_rate_2019 = property2019/pop2019 * 1000) |>
+  mutate(violent_rate_2020 = violent2020/pop2020 * 1000) |>
+  mutate(property_rate_2020 = property2020/pop2020 * 1000) |>
+  select(city, county, violent_rate_2019, property_rate_2019, violent_rate_2020, property_rate_2020)
+```
+
+Percentage Change คือ ใหม่ - เก่า/เก่า x 100
+
+```{r}
+md_cities_change <- md_cities_rates |>
+  mutate(violent_percent_change = ((violent_rate_2020 - violent_rate_2019)/violent_rate_2019) * 100) |>
+  mutate(property_percent_change = ((property_rate_2020 - property_rate_2019)/property_rate_2019) * 100) |>
+  select(city, county, violent_percent_change, property_percent_change)
+```
+
+หา Percentile โดยใช้ ntile ตัวอย่าง: ถ้าเมือง A มีอาชญากรรมอยู่ที่ Percentile 90 หมายถึง เมือง 90% ใน Dataset นี้มีอาชญากรรมน้อยกว่า หรือเท่ากับเมือง A หรือ เมือง 10% ใน Dataset นี้มีอาชญากรรมมากกว่าหรือเท่ากับเมือง A
+
+```{r}
+md_cities_percentiles <- md_cities_rates |>
+  mutate(percentile_violent_2020 = ntile(violent_rate_2020, 100)) |>
+  select(city, county, violent_rate_2020, percentile_violent_2020)
+```
+
+IQR หรือ Inter Quartile Range คือระยะห่างระหว่าง Q1 และ Q3 ก็คือ เอา Q1 - Q3 นั่นแหละ
+
+```{r}
+md_cities_percentiles |>
+  summarise(
+    iqr_violent_2020 = IQR(violent_rate_2020)
+  )
+```
+
+เราสามารถเอา IQR มาหา Outliers ได้ โดยเราต้องรู้ Q1 Q3 และ IQR ก่อน
+
+```{r}
+#Im gonna find potential outliers from IQR
+#Find Q1 and Q3 first
+summary(md_cities_percentiles$violent_rate_2020)
+```
+
+จากนั้นเราสามารถหา Outliers ได้จาก Q1 - (IQR) x (1.5) Q3 + (IQR) X (1.5) หมายความว่า ค่าอะไรก็ตามที่น้อยกว่า Q1 - (IQR) x (1.5) หรือมากกว่า Q3 + (IQR) X (1.5) เป็น Outliers
+
+```{r}
+#Q1 - (IQR)(1.5)
+0 - (4.2)*(1.5)
+#Q3 + (IQR)(1.5)
+4.199 + (4.2)*(1.5)
+#So outliers are anything that below -6.3 and above 10.499
+```
+
+**Crime Rate**
+
+```{r}
+crimes <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/md_annual_crime.csv") |> clean_names()
+```
+
+```{r}
+crimes |> mutate(total_rate = grand_total/population * 10000)
+```
+
+```{r}
+crimes_with_rates <- crimes |> mutate(violent_rate = violent_crime_total/population * 10000, property_rate = property_crime_total/population * 10000)
+```
+
+**Volleyball Percentile**
+
+```{r}
+matches <- read_csv("https://raw.githubusercontent.com/dwillis/NCAAWomensVolleyballData/refs/heads/main/data/ncaa_womens_volleyball_matchstats_2024.csv")
+```
+
+```{r}
+team_aces <- matches |> 
+  group_by(team) |> 
+  summarize(total_aces = sum(aces)) |> 
+  arrange(desc(total_aces))
+```
+
+```{r}
+summary(team_aces$total_aces)
+
+team_aces |> mutate(percentile = ntile(total_aces, 100))
+```
+
+*Normal Distribution / Standard Deviation*
+
+-   ถ้าข้อมูลกระจายตัวแบบปกติ หมายความว่ามันจะเป็นรูป Bell-Curve หางทั้งสองข้างจะไม่ skewed คือยาวเท่า ๆ กัน ทำให้เป็นทรง symmetrical
+-   ถ้ามันกระจายตัวปกติ แสดงว่า mean กับ median ใกล้เคียงกันอยู่ตรงกลาง ถ้าจะใช้ค่าแทนข้อมูลนี้ใช้ mean ได้
+-   ถ้ามันกระจายตัวไม่ปกติ แสดงว่ามัน skewed ซ้ายหรือขวา หรือ หางทางซ้าย หรือ ขวา อาจจะยาวกว่าอีกข้าง ทำให้ mean อาจจะไม่อยู่ตรงกลาง อาจจะต้องใช้ median แทน
+-   Standard Deviation คือค่าที่เอามาวัดว่า ข้อมูลกระจายตัวออกห่างจากตรงกลางหรือ mean มากแค่ไหน ถ้าค่า SD ต่ำ แสดงว่าข้อมูลกระจุกตัวตรงกลาง ถ้าค่า SD สูงแสดงว่าข้อมูลกระจายตัวออกห่างจาก mean
+-   ถ้าข้อมูลกระจายตัวแบบปกติ ปริมาณข้อมูลในช่วง 1SD (รวมไปทางซ้ายและขวาของกึ่งกลาง) จะอยู่ที่ 68% (ประมาณ 2 ใน 3) / 2SD จะอยู่ที่ 95% / 3SD จะอยู่ที่ 99.7%
+
+**HW6 Spotify Songs**
+
+```{r}
+spotify_song <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/spotify_2020.csv")
+```
+
+```{r}
+spotify_song |>
+  summarise(
+    mean = mean(danceability),
+    sd = sd(danceability)
+  )
+```
+
+เราสร้าง histogram เพื่อมาดูการกระจายตัวของข้อมูลค่ะ
+
+```{r}
+spotify_song |>
+  ggplot() +
+  geom_histogram(aes(x = danceability))
+#ถ้าจะไม่ตั้งค่า bin หรือ binwidth ก็เขียนง่าย ๆ แบบนี้ได้
+```
+
+```{r}
+spotify_song |>
+  ggplot() +
+  geom_histogram(aes(x = danceability)) +
+  geom_vline(aes(xintercept = mean(danceability)), color = "purple", linetype = "dashed", size = 1)
+```
+
+**Car Tehfts**
+
+```{r}
+car_thefts <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/car_thefts_jan24.csv")
+```
+
+```{r}
+car_thefts |> summarize(mean = mean(count), sd = sd(count))
+```
+
+```{r}
+car_thefts |> 
+  ggplot() + 
+  geom_histogram(aes(x = count), binwidth = 2) +
+#คือข้อมูลอันนี้มันต้องใช้ binwidth เพราะมันจะมีบางค่าที่ข้อมูลไม่มีและมันจะแหว่งไป ดูไม่เหมือน histogram binwidth คือความกว้างของแท่ง ถ้าใช้ 1 มันจะแคบเกินไป เลยใช้ 2 ให้ดูแท่งมันเชื่อมกัน
+  geom_vline(aes(xintercept = mean(count)), color = "red", linetype = "dashed", size = 1) +
+#draw verticle line that marks the mean value / paint the line red / make it dashed / and the size 1
+  geom_vline(aes(xintercept = mean(count) - sd(count)), color = "blue", linetype = "dashed", size = 1) +
+#draw verticle line that marks the mean value - sd / paint the line red / make it dashed / and the size 1
+  geom_vline(aes(xintercept = mean(count) + sd(count)), color = "blue", linetype = "dashed", size = 1)
+```
+
+*Z-Score*
+
+-   Z-Score คือค่าที่แสดงว่า ข้อมูลอันนึงอยู่ห่างจาก mean กี่ SD
+-   ถ้าค่า Z-Score เยอะ แสดงว่าข้อมูลอันนั้นอยู่ห่างจาก mean มาก แสดงว่าอาจจะเป็น Outlier
+-   Z-Score เอาไว้ช่วยเทียบค่าข้อมูลอันนึงกับข้อมูลอื่น ๆ บางทีเทียบกันเฉยๆ มันมองยากว่าอะไรมากกว่า ดีกว่า หรือ แย่กว่า แต่ถ้าเทียบ Z-Score มันจะดูเป็นมาตรฐานมากกว่า เพราะมันมีฐานการเทียบเดียวกันคือค่า mean
+-   A z-score tells us how many standard deviations a data point is from the mean. Generally:
+-   Z-scores between -2 and 2 represent typical values (about 95% of the data)
+-   Z-scores beyond ±2 indicate unusual values that might warrant investigation
+-   Z-scores beyond ±3 are very unusual (only about 0.3% of normally distributed data)
+
+```{r}
+library(knitr)      # For nice tables ก็ไม่ได้สวยขนาดนั้นเอาจริง!
+library(lubridate)  # For working with dates
+library(scales)     # For better axis formatting
+```
+
+**Baltimore County 911 Overdose Calls Analysis**
+
+```{r}
+# Load the 911 calls data
+calls_data <- read_csv("https://raw.githubusercontent.com/dwillis/datajournalismbook-maryland/refs/heads/main/data/baltco_911_calls.csv")
+
+# Display the first few rows to understand the structure
+head(calls_data)
+```
+
+เช็คตารางคร่าว ๆ
+
+```{r}
+# Get a summary of the data
+glimpse(calls_data)
+
+# Check for any missing values
+colSums(is.na(calls_data))
+
+# Check the date range in our data
+min_date <- min(calls_data$date)
+max_date <- max(calls_data$date)
+cat("Data ranges from", min_date, "to", max_date)
+#at means concatenate and print / it links text and variables together
+```
+
+เอาวันที่มีสายเรียกเข้ามารวมกัน แล้วนับว่าแต่ละวันมีกี่คอล
+
+```{r}
+# Count calls per day
+daily_calls <- calls_data |>
+  count(date, name = "call_count")
+#ตั้งชื่อให้คอลัมน์จำนวน ไม่งั้นอี R มันจะตั้งให้ว่าชื่อ n ซึ่งไม่เริ่ด!!
+
+# Display the first few days
+head(daily_calls, 10) |>
+  kable()
+
+# Basic summary statistics for daily call volume
+summary(daily_calls$call_count)
+#this will show min / 1st q / median / mean / 3rd q / max 
+```
+
+เอาข้อมูลมาพล็อต
+
+```{r}
+# Plot daily call volume
+ggplot(daily_calls, aes(x = date, y = call_count)) +
+  geom_line(color = "darkblue", alpha = 0.7) +
+  geom_point(color = "darkblue", alpha = 0.5, size = 1) +
+#alpha means the transparency of the line or point 
+  theme_minimal() +
+  labs(title = "Daily 911 Overdose Calls in Baltimore County",
+       x = "Date",
+       y = "Number of Calls",
+       caption = "Source: Baltimore County 911 Call Data") +
+  scale_y_continuous(labels = comma) +
+#scale_y_continuous() → you're formatting a continuous numeric axis
+#labels = comma → format numbers with commas
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#axis.text.x → the text on the x-axis
+#element_text() → modifies text appearance
+#angle = 45 → rotate text 45 degrees
+#hjust = 1 → right-align the text
+```
+
+มาหา Z-Score กันค้า สูตรค่ะ (data - mean)/SD
+
+```{r}
+# Calculate z-scores for daily call counts
+daily_calls <- daily_calls |>
+  mutate(
+    mean_calls = mean(call_count),
+    sd_calls = sd(call_count),
+    z_score = (call_count - mean_calls) / sd_calls
+  )
+
+# Display the data with z-scores
+daily_calls |>
+  select(date, call_count, z_score) |>
+  head(10) |>
+  kable(digits = 2)
+```
+
+กรองดูวันที่มี Z-Score น้อยหรือมากกว่า 2
+
+```{r}
+# Find days with unusual call volumes
+unusual_days <- daily_calls |>
+  filter(abs(z_score) > 2) |>
+  arrange(desc(abs(z_score)))
+#abs means absolute value 
+
+# Display unusual days
+unusual_days |>
+  select(date, call_count, z_score) |>
+  kable(digits = 2)
+
+# Count how many days were unusually busy vs. unusually quiet
+unusual_days |>
+  group_by(unusual_type = if_else(z_score > 0, "Unusually High", "Unusually Low")) |>
+#create new column call "unusual_type" containing "Unusually High" if value in z score column > 0 and "Unusually Low" if otherwise and then group these 2 together and count 
+  summarise(count = n()) |>
+  kable()
+```
+
+เอามาพล็อต
+
+```{r}
+# Create a clean factor for the plot legend
+daily_calls <- daily_calls |>
+  mutate(call_volume_type = case_when(
+    z_score > 2 ~ "Unusually High",
+    z_score < -2 ~ "Unusually Low",
+    TRUE ~ "Normal"
+  ))
+
+# Plot with unusual days highlighted
+ggplot(daily_calls, aes(x = date, y = call_count, color = call_volume_type)) +
+  geom_line(color = "gray70") +
+  geom_point(size = 2) +
+  scale_color_manual(values = c("Normal" = "gray50", 
+                               "Unusually High" = "red", 
+                               "Unusually Low" = "blue")) +
+  theme_minimal() +
+  labs(title = "Daily 911 Overdose Calls with Unusual Days Highlighted",
+       subtitle = "Unusual days have z-scores with absolute values > 2",
+       x = "Date",
+       y = "Number of Calls",
+       color = "Call Volume",
+       caption = "Source: Baltimore County 911 Call Data") +
+  scale_y_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+ทีนี้ดูแยกตามวันในสัปดาห์ (จ อ พ พฤ...)
+
+```{r}
+# Add day of week to our dataset
+daily_calls <- daily_calls |>
+  mutate(
+    day_of_week = wday(date, label = TRUE)
+  )
+#wday changes date to weekdays (1 2 3 4...) and label change number to the name of day (Sun Mon Tue...)
+
+# Calculate average calls by day of week
+dow_summary <- daily_calls |>
+  group_by(day_of_week) |>
+  summarise(
+    avg_calls = mean(call_count),
+    median_calls = median(call_count),
+    min_calls = min(call_count),
+    max_calls = max(call_count)
+  ) |>
+  arrange(match(day_of_week, c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")))
+#the last line mean match values in the column "day_of_week) with the order of data in this c(..........)
+
+# Display summary by day of week
+dow_summary |> kable(digits = 1)
+
+# Plot calls by day of week
+ggplot(dow_summary, aes(x = day_of_week, y = avg_calls)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = round(avg_calls, 1)), vjust = -0.5) +
+#this line mean add text label using value from "avg_calls" and round them up to 1 decimal, vjust = position of the text / 0 mean centered on the bar top / 1 mean inside the bar / so -0.5 means moving upward a little bit
+  theme_minimal() +
+  labs(title = "Average 911 Overdose Calls by Day of Week",
+       x = "Day of Week",
+       y = "Average Number of Calls",
+       caption = "Source: Baltimore County 911 Call Data") +
+  theme(axis.text.x = element_text(angle = 0))
+```
+
+หา Z-Score โดยเทียบกับ mean ของแต่ละวัน
+
+```{r}
+# Calculate day-of-week adjusted z-scores
+daily_calls <- daily_calls |>
+  group_by(day_of_week) |>
+#we use group by first to tell R to calculate within the small sub-group like find mean of Mon not mean of the entire dataset
+  mutate(
+    dow_mean = mean(call_count),
+    dow_sd = sd(call_count),
+    dow_z_score = (call_count - dow_mean) / dow_sd
+  ) |>
+  ungroup()
+#we ungroup to tell R that we're done calculate stuff in the sub-group and back to normal for future action
+
+# Find days that were unusual for their day of the week
+dow_unusual_days <- daily_calls |>
+  filter(abs(dow_z_score) > 2) |>
+  arrange(desc(abs(dow_z_score)))
+
+# Display days that were unusual for their day of the week
+dow_unusual_days |>
+  select(date, day_of_week, call_count, dow_mean, dow_z_score) |>
+  kable(digits = 2)
+```
+
+มาดูแบบเป็นเดือนบ้าง
+
+```{r}
+# Add month and year for seasonal analysis
+daily_calls <- daily_calls |>
+  mutate(
+    month = month(date, label = TRUE),
+#this line change date to month and label them by name
+    year = year(date)
+  )
+
+# Calculate average calls by month
+monthly_summary <- daily_calls |>
+  group_by(month) |>
+  summarise(
+    avg_calls = mean(call_count),
+    median_calls = median(call_count)
+  )
+
+# Plot calls by month
+ggplot(monthly_summary, aes(x = month, y = avg_calls, group = 1)) +
+#group 1 draw the line to connect each point to become 1 line
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Average 911 Overdose Calls by Month",
+       x = "Month",
+       y = "Average Number of Calls",
+       caption = "Source: Baltimore County 911 Call Data")
+
+# Show a rolling 7-day average to better see trends
+daily_calls <- daily_calls |>
+  arrange(date) |>
+  mutate(rolling_avg_7day = zoo::rollmean(call_count, k = 7, fill = NA))
+#This is for creating a trend line / zoo::rollmean() pull function "rollmean" from package "zoo" / it compute the moving (rolling) average of each data point / by taking a period of k consecutive data points / ex. for each data point, calculate the mean of that data + 6 previous and following data / fill = NA for the data point that doesn't have 6 previous or 6 following (first 3 and last 3 at the edge)
+
+# Plot with 7-day rolling average
+ggplot(daily_calls, aes(x = date)) +
+  geom_line(aes(y = call_count), color = "gray60", alpha = 0.7) +
+  geom_line(aes(y = rolling_avg_7day), color = "blue", size = 1) +
+  theme_minimal() +
+  labs(title = "Daily 911 Overdose Calls with 7-Day Moving Average",
+       x = "Date",
+       y = "Number of Calls",
+       caption = "Source: Baltimore County 911 Call Data") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+กรองดูวันที่มี Z-Score มากสุด
+
+```{r}
+# Get the top 10 most unusual days
+top_outliers <- daily_calls |>
+  arrange(desc(abs(z_score))) |>
+  head(10) |>
+  select(date, day_of_week, call_count, z_score)
+
+# Display these days
+top_outliers |> kable(digits = 2)
+```
+
+**HW7 Car Accident**
+
+```{r}
+accidents <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/daily_accidents.csv")
+```
+
+สรุปข้อมูลทั่วไป จำนวนวันที่มีอุบัติเหตุ / วันที่อุบัติเหตุมากสุด น้อยสุด / วันที่เก่าสุด และใหม่สุด
+
+```{r}
+# Get a summary of the data
+summary(accidents)
+
+# Check how many days we have in total
+nrow(accidents)
+
+# Check the date range
+min(accidents$date)
+max(accidents$date)
+```
+
+เอาข้อมูลวัน + จำนวนอุบัติเหตุมาพล็อต
+
+```{r}
+# Plot time series
+ggplot(accidents, aes(x = date, y = total)) +
+  geom_line(alpha = 0.5) +
+#alpha = transparency of the line
+  geom_smooth(method = "loess", span = 0.1) +
+#this add smooth trend line on top of the plot / method = loess --> Locally Estimated (or Weighted) Regression. It fits many tiny regressions locally. And stitches them together into a smooth curve / span (0 - 1) controls how wiggly or smooth the curve is. / smaller span uses fewer nearby point = more wiggly / bigger span uses more data = smoother curve  
+  theme_minimal() +
+  labs(title = "Daily Accidents in Prince George's County",
+       x = "Date",
+       y = "Number of Accidents",
+       caption = "Source: Prince George's County Accident Data")
+```
+
+ดูแบบแบ่งตามวันในสัปดาห์ (จ - ศ) แต่ละวัน mean max min ยังไงแล้วเอาไปพล็อต
+
+```{r}
+# Add day of week 
+accidents <- accidents |>
+  mutate(
+    day_of_week = wday(date, label = TRUE),
+    month = floor_date(date, "month"),
+#this line round a date down to the beginning of the specific unit like round 03-15-2020 to 03-01-2020
+    year = year(date)
+  )
+
+# Check accident patterns by day of week
+day_of_week_summary <- accidents |>
+  group_by(day_of_week) |>
+  summarize(
+    avg_accidents = mean(total),
+    median_accidents = median(total),
+    max_accidents = max(total),
+    min_accidents = min(total)
+  )
+
+# Display day of week summary
+day_of_week_summary |> kable(digits = 2)
+
+# Visualize by day of week
+ggplot(accidents, aes(x = day_of_week, y = total)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Accident Distribution by Day of Week",
+       x = "Day of Week",
+       y = "Number of Accidents",
+       caption = "Source: Prince George's County Accident Data")
+```
+
+หา Z-Score จาก mean ของวันทั้งหมด สูตรคำนวณ Z-Score คือ ค่านั้นๆ - mean / SD
+
+```{r}
+# Calculate z-scores for total accidents
+accidents <- accidents |>
+  mutate(
+    mean_accidents = mean(total),
+    sd_accidents = sd(total),
+    z_score = (total - mean_accidents) / sd_accidents
+  )
+
+# Display the data with z-scores
+accidents |>
+  select(date, day_of_week, total, z_score) |>
+  head(10) |>
+  kable(digits = 2)
+```
+
+หาวันที่อุบัติเหตุเกิดขึ้นมากหรือน้อยผิดปกติ (วันที่ Z-Score มากกว่าหรือน้อยกว่า 2)
+
+```{r}
+# Find days with unusual accident numbers
+unusual_days <- accidents |>
+  filter(abs(z_score) > 2) |>
+  arrange(desc(abs(z_score)))
+
+# Display number of unusual days
+cat("Number of days with unusual accident counts:", nrow(unusual_days), 
+    "out of", nrow(accidents), "total days (", 
+    round(nrow(unusual_days)/nrow(accidents)*100, 2), "%)")
+#mean round this percentage to 2 decimal
+
+# Display the top 10 most unusual days
+unusual_days |>
+  head(10) |>
+  select(date, day_of_week, total, z_score) |>
+  kable(digits = 2)
+```
+
+```{r}
+# Highlight unusual days in the time series
+ggplot(accidents, aes(x = date, y = total, color = abs(z_score) > 2)) +
+#In the color we establish the condition that if abs(z_score) > 2 it's true otherwise it's false
+  geom_point(alpha = 0.5) +
+  scale_color_manual(values = c("gray", "red"), 
+                     name = "Unusual Value",
+                     labels = c("Normal", "Unusual")) +
+#this line assign color code based on established condition/ the first in order for data that is false and second for the data that is true
+  theme_minimal() +
+  labs(title = "Daily Accidents with Unusual Days Highlighted",
+       subtitle = "Unusual days have z-scores with absolute values > 2",
+       x = "Date",
+       y = "Number of Accidents",
+       caption = "Source: Prince George's County Accident Data")
+```
+
+หา Z-Score เทียบกับ mean ของแต่ละวันในสัปดาห์
+
+```{r}
+# Calculate day-of-week adjusted z-scores
+accidents <- accidents |>
+  group_by(day_of_week) |>
+  mutate(
+    dow_mean = mean(total),
+    dow_sd = sd(total),
+    dow_z_score = (total - dow_mean) / dow_sd
+  ) |>
+  ungroup()
+
+# Find days with unusual day-of-week z-scores
+unusual_dow <- accidents |>
+  filter(abs(dow_z_score) > 2) |>
+  arrange(desc(abs(dow_z_score)))
+
+# Display the top unusual days adjusted for day of week
+unusual_dow |>
+  head(10) |>
+  select(date, day_of_week, total, dow_mean, dow_z_score) |>
+  kable(digits = 2)
+```
+
+```{r}
+# Count unusual days by day of week
+unusual_count_by_dow <- accidents |>
+  filter(abs(dow_z_score) > 2) |>
+  count(day_of_week) |>
+#แบบนี้คือไม่ได้ใส่ชื่อให้มันว่าอีคอลัมน์จำนวนจะชื่ออะไร มันเลยตั้งให้ว่าชื่อ n
+  arrange(desc(n))
+
+# Get total count by day of week for comparison
+total_by_dow <- accidents |>
+  count(day_of_week)
+#แบบนี้คือไม่ได้ใส่ชื่อให้มันว่าอีคอลัมน์จำนวนจะชื่ออะไร มันเลยตั้งให้ว่าชื่อ n
+
+# Join to calculate percentages
+unusual_rates <- unusual_count_by_dow |>
+  left_join(total_by_dow, by = "day_of_week") |>
+  rename(unusual_days = n.x, total_days = n.y) |>
+#ตารางสองอันมีคอลัมน์ชื่อ n ซ้ำกัน มันเลยตั้งให้อันนึงเป็น n.x อีกอันเป็น n.y เราเลยต้องมาแก้ชื่อทีหลัง
+  mutate(
+    pct_unusual = (unusual_days / total_days) * 100
+  )
+
+# Display results
+unusual_rates |> kable(digits = 2)
+```
+
+ดูแบบแบ่งตามเดือน แต่ละเดือน mean med ยังไง แล้วเอาไป พล็อตกราฟ / หา Z-Score เทียบกับ mean ของแต่ละเดือน
+
+```{r}
+# Extract month from date for seasonal analysis
+accidents <- accidents |>
+  mutate(month_of_year = month(date, label = TRUE))
+
+# Calculate average accidents by month
+monthly_pattern <- accidents |>
+  group_by(month_of_year) |>
+  summarize(
+    avg_accidents = mean(total),
+    median_accidents = median(total)
+  )
+
+# Plot monthly pattern
+ggplot(monthly_pattern, aes(x = month_of_year, y = avg_accidents, group = 1)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Average Daily Accidents by Month",
+       x = "Month",
+       y = "Average Number of Accidents",
+       caption = "Source: Prince George's County Accident Data")
+
+# Calculate month-adjusted z-scores
+accidents <- accidents |>
+  group_by(month_of_year) |>
+  mutate(
+    monthly_mean = mean(total),
+    monthly_sd = sd(total),
+    monthly_z_score = (total - monthly_mean) / monthly_sd
+  ) |>
+  ungroup()
+
+# Find days with unusual monthly z-scores
+unusual_monthly <- accidents |>
+  filter(abs(monthly_z_score) > 2) |>
+  arrange(desc(abs(monthly_z_score)))
+
+# Display top days that are unusual for their month
+unusual_monthly |>
+  head(10) |>
+  select(date, month_of_year, day_of_week, total, monthly_mean, monthly_z_score) |>
+  kable(digits = 2)
+```
+
+หาโคตร outliers / Z-Score เกิน 3
+
+```{r}
+# Find extreme outliers
+extreme_outliers <- accidents |>
+  filter(abs(z_score) > 3) |>
+  arrange(desc(abs(z_score)))
+
+# Display extreme outliers
+if(nrow(extreme_outliers) > 0) {
+  extreme_outliers |>
+    select(date, day_of_week, total, z_score) |>
+    kable(digits = 2)
+} else {
+  cat("No days with z-scores beyond ±3 were found in the dataset.")
+}
+```
+
+*Sampling and Probability*
+
+**Sampling**
+
+สร้างประชากรกับอายุ
+
+```{r}
+set.seed(42)
+#this line make every time we sample, we will get the same randomized number / if not include this line, every time we random, we will get a different set of number / 42 is just a programming culture (number from a book "The Hitchhiker’s Guide to the Galaxy" / any integer would work
+
+population <- tibble(
+  age = sample(18:80, 1000, replace = TRUE)
+)
+#this mean get 1000 randomized number that range 18 to 80 and allow them to have repeated no.
+
+population
+```
+
+สุ่มกลุ่มตัวอย่าง
+
+```{r}
+sampled_data <- population |>
+  slice_sample(n = 100)
+#randomly select 100 rows from the table 
+
+sampled_data
+```
+
+ดู mean / sd ของกลุ่มตัวอย่าง
+
+```{r}
+sample_stats <- sampled_data |>
+  summarise(
+    mean_age = mean(age),
+    sd_age = sd(age)
+    )
+
+sample_stats
+```
+
+ดู mean / sd ของประชากร
+
+```{r}
+population_stats <- population |>
+  summarise(
+    mean_age = mean(age),
+    sd_age = sd(age)
+  )
+
+population_stats
+```
+
+เอามาเทียบกัน
+
+```{r}
+sample_stats <- sample_stats |>
+  mutate(data = "sample") |>
+  select(data, mean_age, sd_age)
+
+population_stats <- population_stats |>
+  mutate(data = "population") |>
+  select(data, mean_age, sd_age)
+
+comparison <- sample_stats |> bind_rows(population_stats)
+comparison
+```
+
+เทียบกับกลุ่มตัวอย่างที่ขนาดเล็กกว่า
+
+```{r}
+smaller_sampled_data <- population |>
+  slice_sample(n = 20)
+
+smaller_sample_stats <- smaller_sampled_data |>
+  summarise(
+    mean_age = mean(age),
+    sd_age = sd(age)
+    )
+
+smaller_sample_stats <- smaller_sample_stats |>
+  mutate(data = "smaller sample") |>
+  select(data, mean_age, sd_age)
+
+comparison <- comparison |> bind_rows(smaller_sample_stats)
+comparison
+```
+
+ถ้ายิ่งกลุ่มตัวอย่างเล็ก ก็จะเข้าใกล้ mean ของประชากรจริงได้มาก แต่ sd จะยิ่งกว้าง 
+
+**HW7B Probability and Normal Distribution**
+
+```{r}
+wh_salaries <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/white_house_salaries_2025.csv")
+```
+
+ดูข้อมูลทั่วไปก่อง
+
+```{r}
+wh_paid <- wh_salaries |>
+  filter(SALARY > 0)
+
+wh_paid |>
+  summarise(
+    mean = mean(SALARY),
+    median = median(SALARY),
+    sd = sd(SALARY)
+  )
+```
+
+ทีนี้เอามาพล็อตกราฟ ดู mean กับ +- 1SD
+
+```{r}
+wh_paid |>
+  ggplot(aes(x = SALARY)) +
+  geom_histogram(binwidth = 10000, fill = "brown", color = "black") +
+  geom_vline(aes(xintercept = mean(SALARY)), color = "orange", linetype = "dashed", size = 1) +
+  geom_vline(aes(xintercept = mean(SALARY) + sd(SALARY)), color = "green", linetype = "dashed", size = 1) +
+  geom_vline(aes(xintercept = mean(SALARY) - sd(SALARY)), color = "green", linetype = "dashed", size = 1) 
+```
+
+ทีนี้เราจะลองเทียบสัดส่วนของข้อมูลตามช่วง SD ต่างๆ ว่ามันเป็นตาม Empirical Rules มั้ย Rules คือถ้ามันเป็น Normal Distribution - 68% ของข้อมูลจะอยู่ใน +- 1SD - 95% ของข้อมูลจะอยู่ใน +- 2SD - 99.7% ของข้อมูลจะอยู่ใน +- 3SD
+
+```{r}
+mean_sal <- mean(wh_paid$SALARY)
+sd_sal <- sd(wh_paid$SALARY)
+total_n <- nrow(wh_paid)
+
+empirical <- tibble(
+  range = c("Within 1 SD", "Within 2 SD", "Within 3 SD"),
+  lower = c(mean_sal - sd_sal, mean_sal - 2 * sd_sal, mean_sal - 3 * sd_sal),
+  upper = c(mean_sal + sd_sal, mean_sal + 2 * sd_sal, mean_sal + 3 * sd_sal),
+  expected_pct = c(68, 95, 99.7),
+  actual_count = c(
+    sum(wh_paid$SALARY >= (mean_sal - sd_sal) & wh_paid$SALARY <= (mean_sal + sd_sal)),
+    sum(wh_paid$SALARY >= (mean_sal - 2 * sd_sal) & wh_paid$SALARY <= (mean_sal + 2 * sd_sal)),
+    sum(wh_paid$SALARY >= (mean_sal - 3 * sd_sal) & wh_paid$SALARY <= (mean_sal + 3 * sd_sal))
+  ),
+#create actual_count column that contain 3 values that match each condition
+  actual_pct = round((actual_count / total_n) * 100, 1)
+)
+
+empirical
+```
+
+ทีนี้เราจะหา Z-Score แล้วดูว่า ความน่าจะเป็นของข้อมูลที่มี Z-Score นี้จะเกิดขึ้นคือกี่ % (ตามหลัก Empirical Rule) และเทียบกับความเป็นจริงว่ามันมีโอกาสเกิดขึ้นกี่ %
+
+```{r}
+#Finding z-score of 150,000
+z_score = (150000 - mean_sal)/sd_sal
+
+#Find the probability 
+probability = pnorm(z_score)
+probability
+
+#Check with the actual data
+salaries_under_150000 <- wh_paid |>
+  filter(SALARY < 150000)
+salaries_under_150K = nrow(salaries_under_150000)
+salaries_under_150K/total_n
+```
+
+ลองหาระหว่างช่วงดูซิ
+
+```{r}
+#Find z-score and probability of 80k
+z_score_80k = (80000 - mean_sal)/sd_sal
+probability_80k = pnorm(z_score_80k)
+probability_80k
+
+#Find z-score and probability of 120k
+z_score_120k = (120000 - mean_sal)/sd_sal
+probability_120k = pnorm(z_score_120k)
+probability_120k
+
+#Find the probability between them
+probability_120k - probability_80k
+```
+
+ทีนี้ลองเอาข้อมูลมาแบ่งเป็นช่วง ๆ คำนวณดูว่าตามหลัก Empirical Rule แต่ละช่วง ควรมีข้อมูลกี่ % แปลงออกมาเป็นจำนวน count เท่าไหร่ และของจริง count ได้เท่าไหร่
+
+```{r}
+bins <- tibble(
+  category = c("Below $60k", "$60k-$90k", "$90k-$120k", "$120k-$150k", "Above $150k"),
+  lower = c(-Inf, 60000, 90000, 120000, 150000),
+  upper = c(60000, 90000, 120000, 150000, Inf)
+) |>
+  mutate(
+    expected_pct = pnorm(upper, mean = mean_sal, sd = sd_sal) - pnorm(lower, mean = mean_sal, sd = sd_sal),
+    expected_count = round(expected_pct * total_n, 1),
+    observed_count = c(
+      sum(wh_paid$SALARY < 60000),
+      sum(wh_paid$SALARY >= 60000 & wh_paid$SALARY < 90000),
+      sum(wh_paid$SALARY >= 90000 & wh_paid$SALARY < 120000),
+      sum(wh_paid$SALARY >= 120000 & wh_paid$SALARY < 150000),
+      sum(wh_paid$SALARY >= 150000)
+    ),
+    difference = observed_count - expected_count
+  )
+
+bins |> select(category, expected_count, observed_count, difference)
+```
+
+ถ้าข้อมูลกระจายตัวไม่เป็น Normal Distribution มันก็จะไม่เป็นไปตามกฏ Empirical
+
+*Central Limit Theorem*
+
+-   Central Limit Theorem คือทฤษฎีที่บอกว่า ถ้าเราสุ่ม Sample มากครั้งเท่าไหร่ โอกาสที่ Sample นั้นจะมีสัดส่วนเหมือนกับประชากรก็จะมากขึ้นเท่านั้น
+-   ดังนั้นถ้าเราเอาข้อมูลสัดส่วนของ Subgroup จาก Sample ที่เราทำแต่ละครั้งมา plot graph ยิ่งเราทำมาก หน้าตามันจะยิ่งใกล้เคียงกับ bell-shape curve ว้าวมากแม่!! โดยมันจะ Cluster กันอยู่ตรงกลาง ซึ่งก็คือสัดส่วนจริงของ Subgroup ในประชากร
+-   และอีกอย่างนึงคือ ยิ่ง sample size ใหญ่ มันก็จะยิ่งใกล้เคียงกับ bell-shape มากขึ้นเท่านั้น มันจะยิ่ง Cluster ตรงกลาง จุดพีคจะยิ่งสูง ฐานจะยิ่งแคบ
+
+**M and Ms**
+
+```{r}
+mm <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/mandms.csv")
+```
+สุ่มกลุ่มตัวอย่างมา 5 แถว
+
+```{r}
+set.seed(42)
+
+mm_sample_5 <- mm |>
+  sample_n(5)
+```
+
+หา mean / sd ของกลุ่มตัวอย่าง
+
+```{r}
+mm_sample_5_mean <- mean(mm_sample_5$red)
+mm_sample_5_mean
+
+mm_sample_5_sd <- sd(mm_sample_5$red)
+mm_sample_5_sd
+```
+หา mean / sd ของประชากร
+
+```{r}
+mm_mean <- mean(mm$red)
+mm_mean
+
+mm_sd <- sd(mm$red)
+mm_sd
+```
+ลองเอามาเทียบกัน
+
+```{r}
+mm_comparison <- tibble(
+  data = "mm_population",
+  mean = mm_mean,
+  sd = mm_sd
+)
+
+mm_comparison_sample <- tibble(
+  data = "mm_sample_5",
+  mean = mm_sample_5_mean,
+  sd = mm_sample_5_sd
+)
+
+mm_comparison <- bind_rows(mm_comparison, mm_comparison_sample)
+mm_comparison
+```
+
+
+**Polling Simulation**
+
+```{r}
+ces <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/ces_2024_religion.csv")
+```
+เราจะดูว่าในประชากร มีสัดส่วนคนไม่มีศาสนาเท่าไหร่ 
+
+```{r}
+ces <- ces |>
+  mutate(unaffiliated = trad %in% c("Atheist", "Agnostic", "Nothing in Particular"))
+#This mean make new column name unaffiliated and return TRUE if the values in the trad column are in this list %in% c(..........), otherwise return FALSE
+
+proportion <- mean(ces$unaffiliated)
+#if the column has TRUE and FALSE values, when we run mean on it, R will see TRUE as 1 and FALSE as 0, so it well calculate the proportion (the mean) of TRUE (as it see as 1) for you!!
+```
+
+ทีนี้เอาประชากรมาสุ่มตัวอย่าง แล้วดูว่าในตัวอย่างที่ได้มีสัดส่วนของคนไม่มีศาสนาเท่าไหร่
+
+```{r}
+set.seed(42)
+
+sample_50 <- ces |>
+  sample_n(50)
+
+proportion_50 <- mean(sample_50$unaffiliated)
+proportion_50
+```
+ทีนี้ลองดูว่าถ้า กลุ่มตัวอย่างใหญ่ขึ้นจะเป็นยังไง
+
+```{r}
+set.seed(42)
+
+sample_500 <- ces |>
+  sample_n(500)
+
+proportion_500 <- mean(sample_500$unaffiliated)
+proportion_500
+```
+ทีนี้เราลองสุ่มมันดูหลาย ๆ ครั้งดูซิ 
+
+```{r}
+set.seed(5555555)
+
+simulate_polls <- function(data, sample_size, n_simulations = 1000) {
+#We gonna assign a function to "simulate_polls" / This function will have 3 arguments 1) "data" dataframe that we want this function to run on 2) "sample_size" the size of rows we want this function to sample from all rows in dataframe 3) "n_simulations = 1000" = how many times we want this function run. It will be 1000 times as default if we not fill other number. 
+  proportions <- replicate(n_simulations, {
+#we gonna replicate ทำซ้ำสิ่งนี้แล้ว store it result in "proportions" / n_simulations เราจะทำซ้ำกี่ครั้ง (1000 ถ้าไม่กรอกเลขอื่นใน argument ที่ 3) / 
+    s <- data |> sample_n(sample_size)
+#เราจะเอา dataframe (data ที่ให้กรอก) มา sample กรองเอา ..n.. แถวตาม sample_size ที่ให้กรอก แล้วเก็บมันไว้ใน s
+    mean(s$unaffiliated)
+#แล้วเราจะหาสัดส่วน TRUE ในคอลัมน์ unaffiliated ในตาราง s
+  })
+  tibble(proportion = proportions, sample_size = sample_size)
+#สุดท้ายเราจะสร้างตาราง ที่มี 2 columns / คอลัมน์แรกชื่อ proportion แล้วเอาค่า proportions มาใส่ / คอลัมน์ที่ 2 ชื่อ sample_size แล้วเอาค่า sample_size มาใส่ / และฟังก์ชั่นจะ run 1000 ครั้ง แสดงว่าอีตารางนี้ ต้องมี 1000 แถว 
+}
+
+simulations_50 <- simulate_polls(ces, 50)
+simulations_500 <- simulate_polls(ces, 500)
+#ตัวอย่างการใช้ คือ เราจะ run function ชื่อ simulate_polls บท datafram ชื่อ ces โดยกรองเอา 500 แถว --> หาสัดส่วนของ true ในคอลัมน์ unaffiliated --> ทำแบบนี้ 1000 ครั้ง --> แล้วสร้างตารางโชว์ผล 1000 แถว เก็บไว้ใน simulations_500
+```
+
+เอาผลของการสุ่ม 1000 ครั้งมาพล็อตกราฟ
+
+```{r}
+simulations_all <- bind_rows(simulations_50, simulations_500) |> 
+  mutate(sample_size = paste("n =", sample_size))
+#ในคอลัมน์ sample_size เติมข้อความ "n =" และก็ตามด้วยค่าเดิม
+
+ggplot(simulations_all, aes(x = proportion)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+#bins คือ histogram เป็นช่วงๆ ถ้าเลขเยอะ (ช่วงสั้น) ดีเทลจะละเอียด แต่จะไม่สวย มันจะเป็นขยัก ๆ ถ้าเลขน้อย (ช่วงกว้าง) อาจจะสวย สมูธ แต่รายละเอียดน้อย
+  geom_vline(xintercept = proportion, color = "red", linetype = "dashed", linewidth = 1) +
+#ดูตรง proportion / proportion ใน code นี้มีสองที่ ที่แรกคือชื่อคอลัมน์ใน simulations_all ถ้าเราใส่ aes(....) มันจะมองหาคอลัมน์ชื่อนี้ในตาราง แต่ถ้าเราไม่ใส่ มันจะมองค่าชื่อถือ ใน ฐานะ object ที่วางอยู่ที่อื่นใน workspace ของเรา  
+  facet_wrap(~sample_size) +
+#จัดกลุ่ม histogram ตามค่าในคอลัมน์ sample_size ถ้ามี 2 ค่า เราก็จะได้ 2 histrogram แยกกัน 
+  labs(
+    title = "Distribution of Sample Estimates: Share Religiously Unaffiliated",
+    subtitle = "Red line = true population proportion. Each histogram shows 1,000 simulated polls.",
+    x = "Sample Proportion",
+    y = "Count",
+    caption = "Source: 2024 Cooperative Election Study"
+  ) +
+  theme_minimal()
+```
+Note เบาๆ สำหรับ qqplot histogram bin คือ บอกให้ r แบ่ง x-axis range เป็นบาร์ที่มีขนาดเท่ากัน n อัน เช่น ถ้า range คือ เงิน 30,000 - 200,000 และใส่ว่า bin = 30 r จะแบ่ง range ออกเป็น 30 แท่งที่มีขนาดเท่ากัน / แต่ถ้าเป็น binwidth คือกำหนดมาเลยว่าจะให้แท่งนึง มีค่าเท่าไหร่ เช่น ให้มีค่า 10,000 แล้วจำนวนเท่าไหร่ก็คือแล้วแต่ range 
+
+**HW8B Polling Simulation**
+
+```{r}
+ces <- read_csv("https://raw.githubusercontent.com/dwillis/jour405/refs/heads/main/data/ces_2024_religion.csv")
+```
+
+หาสัดส่วนของ white อิเจลิกา ในประชากร (ซึ่งเป็น sub group ที่มีสัดส่วนเล็กกว่ากลุ่มคนไม่มีศาสนา)
+
+```{r}
+ces <- ces |>
+  mutate(evangelical = trad %in% ("White Evangelical"))
+
+population_proportion <- mean(ces$evangelical)
+```
+
+ที่นี้สุ่มตัวอย่าง แล้วหาสัดส่วน
+
+```{r}
+set.seed(42)
+
+sample_50 <- ces |>
+  sample_n(50)
+
+proportion_50 <- mean(sample_50$evangelical)
+proportion_50
+```
+ลองสุ่มกลุ่มตัวอย่างที่ใหญ่ขึ้นซิ
+
+```{r}
+set.seed(1966)
+
+sample_500 <- ces |>
+  sample_n(500)
+
+proportion_500 <- mean(sample_500$evangelical)
+proportion_500
+```
+โอเคที่นี้ลองสุ่มกลุ่มตัวอย่างดู 1000 ครั้ง
+
+```{r}
+set.seed(42)
+
+simulate_polls <- function(data, sample_size, n_simulations = 1000) {
+  proportions <- replicate(n_simulations, {
+    s <- data |> sample_n(sample_size)
+    mean(s$evangelical)
+  })
+  tibble(proportion = proportions, sample_size = sample_size)
+}
+
+simulations_50 <- simulate_polls(ces, 50)
+simulations_500 <- simulate_polls(ces, 500)
+```
+
+และก็เอามาทำชาร์ตเหมือนกัน
+
+```{r}
+simulations_all <- bind_rows(simulations_50, simulations_500) |>
+  mutate(sample_size = paste("A sample size of", sample_size))
+
+ggplot(simulations_all, aes(x = proportion)) +
+  geom_histogram(bins = 30, fill = "purple", color = "white") +
+  geom_vline(xintercept = population_proportion, color = "black", linetype = "dashed", linewidth = 1) + 
+  facet_wrap(~sample_size) +
+  labs(
+    title = "Distribution of Sample Estimates: Share of the White Evangelicals",
+    subtitle = "Black line = true population proportion. Each histogram shows 1,000 simulated polls.",
+    x = "Sample Proportion",
+    y = "Count",
+    caption = "Source: 2024 Cooperative Election Study"
+  ) +
+  theme_minimal()
+```
+โอเคสปอยด์ finding จากอันนี้เลยนะ คือ สัดส่วนของ subgroup ที่เราศึกษามีผลต่อการ Sampling 
+- ถ้า Subgroup มีขนาดใหญ่ สัดส่วนเยอะ การ sample ของเราจะเข้าใกล้ bell-shape ได้ง่าย
+- แต่ถ้า Subgroup ที่เราศึกษามีขนาดเล็ก การ sample จะไม่เหมือน Subgroup ที่สัดส่วนเยอะ เพราะเราจะต้องใช้ sample size ที่ใหญ่มากพอ ถึงจะมีโอกาสเจอ sample ที่มีสัดส่วนของ subgroup ใกล้ความจริงได้มาก ถ้าเราใช้ Sample size ที่ขนาดเล็ก โอกาสของสัดส่วน subgroup ในแต่ละ sample ที่เราสุ่มมา มันจะมีโอกาสกระโดดไปมาได้เยอะ เข้าใกล้ความจริงได้น้อย เพราะฉนั้นไม่ว่าเราจะสุ่มเป็นพ้นครั้ง มันก็จะเข้าใกล้ความจริงได้น้อยอยู่ดี วิธีรับมือคือต้องใช้ Sample Size ที่ขนาดใหญ่ 
