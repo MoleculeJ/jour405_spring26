@@ -321,4 +321,55 @@ MIDTERM
 - Not gonna give any code on the exam notebook 
 - Go through all the activities and homework / Re run it again / ทำโพยมาเลยค่ะ 
 - Entire class time for the exam 
--  Final Q will not be in code but it's gonna be s.t. like you have this info how do you gonna use the info to approach specific circumstances    
+-  Final Q will not be in code but it's gonna be s.t. like you have this info how do you gonna use the info to approach specific circumstances
+
+
+---------------------------
+
+3/24
+
+- Standard Error tell us how much the mean could move if we took many samples. It's a method to generalize the information of the sample to the whole population.
+- Standard Error --> Measure the movement of mean only while the SD measure the spread out of all the data, so Standard Error is always lesser than SD 
+***
+sleep_stats <- sleep_stats |>
+  mutate(
+    t_critical = qt(0.975, df = n - 1),
+    margin_error = t_critical * se_hours,
+    ci_lower = mean_hours - margin_error,
+    ci_upper = mean_hours + margin_error
+  )
+     
+***
+- Code นี้เอาไว้หา Confidence Interval = ช่วงที่เรามั่นใจว่า mean มันจะไปตกอยู่ในนี้ ไม่ว่าเราจะ sample ตัวอย่างกี่ครั้งก็ตาม mean มันจะหล่นไม่เกินนี้ หรือ อีกนัยนึงหมายความว่า เราคิดว่า mean ของประชากรจริง ๆ มันต้องอยู่ในช่วงนี้แหละ
+- t_critical = qt(0.975, df = n - 1), --> เอาไว้หาค่า Critical Value จาก T-Distribution ที่ระดับความมั่นใจ 95% --> สูตร Work ยังไง ค่อนข้างซับซ้อน ดังนั้น ไว้ว่างแล้วสนใจค่อยไปอ่าน แต่จำไว้แค่ว่า ถ้าความมั่นใจ 95% คือใช้สูตรนี้ / 95% หมายถึงว่า เรามั่นใจ 95% ว่า range ของ Confidence Interval คือเท่านี้ เป็น conventional number ที่นักคณิตศาสตร์คิดว่ารับได้สำหรับการคำนวณ
+- Margin Error คือ ช่วงความเป็นไปได้ที่ sample mean จะมากกว่า หรือ น้อยกว่า ค่าที่เราหามาได้ ซึ่งจะเอามากำหนด Confidence Interval โดยเอา mean+- กับ margin error
+[เสริม] ที่เราไม่ใช้ mean +- กับ SE เฉยๆ เพราะมันจะ cover ค่าความมั่นใจแค่ 68% ซึ่งน้อยไป (นึกภาพ distribution ของ mean คือทรง bell-shape/normal distribution 1SE คือ เหมือน 1SD) ถ้าเราใช้หมายความว่า มีโอกาสที่ sample mean จากการสุ่มตัวอย่างหลาย ๆ ครั้งจะลงใน range นี้แค่ 68% ซึ่งมันน้อยไป เราเลยต้องใช้ margin error เข้ามาประกอบ เพื่อเป็นการบอกว่าเราต้องการใช้กี่ SE และมัน represent ความมั่นใจระดับไหน (95% คือมาตรฐาน) และทำมันมันไม่เป็น 100% เพราะ 100% เท่ากับ range เป็น infinity คือเรามันใจแน่ ๆ ว่า sample mean จะตกอยู่ใน range infinity ซึ่งถูกต้องแต่ไม่มีประโยชน์ในการเอามาใช้ การหา Confidence Interval คือต้องบาลาสซ์ระหว่าง โอกาสที่จะถูกและกว้างของ range คือถ้าโอกาสถูกต้อง 100% แต่ range กว้างไม่มีที่สิ้นสุดก็ไม่มีประโยชน์ ถ้า range แคบแต่โอกาสที่จะถูกต้องน้อย ก็เอาไปใช่ไม่ได้
+***
+ggplot(sleep_data, aes(x = hours)) +
+  geom_histogram(binwidth = 0.5, fill = "skyblue", color = "white", alpha = 0.7) +
+  geom_vline(xintercept = sleep_stats$mean_hours, color = "red", linewidth = 1) +
+  geom_vline(xintercept = sleep_stats$ci_lower, color = "blue", linetype = "dashed") +
+  geom_vline(xintercept = sleep_stats$ci_upper, color = "blue", linetype = "dashed") +
+  annotate("rect",
+           xmin = sleep_stats$ci_lower,
+           xmax = sleep_stats$ci_upper,
+           ymin = 0, ymax = Inf,
+           fill = "blue", alpha = 0.1) +
+*--> สร้างสี่เหลี่ยม Highlight ที่เริ่มจาก x =... ถึง x =.../ y ตั้งแต่ 0 ยันมิดขอบชาร์ต / ใช้สีน้ำเงิน และ opacity 0.1
+  annotate("text", x = sleep_stats$mean_hours + 0.1, y = 8,
+           label = paste0("Mean: ", round(sleep_stats$mean_hours, 2)),
+           hjust = 0, color = "red", fontface = "bold") +
+*--> เพิ่ม annotation text ตรง x เท่ากับค่านี้... และเขยิบไปทางขวานิด / y = 8 / label คือ ให้ต่อคำว่า "Mean: " กับ อีค่านี้ round(sleep_stats$mean_hours, 2 --> ดึงค่าจากคอลัมน์ mean_hours ในตาราง sleep_stats และปักให้เป็นทศนิยม 2 ตำแหน่ง / hjust = 0 คือให้ข้อความชิดซ้าย + สีแดง + ตัวหนา 
+  labs(
+    title = "Distribution of Student Sleep Hours",
+    subtitle = paste0("95% Confidence Interval for the mean: [",
+                     round(sleep_stats$ci_lower, 2), ", ",
+                     round(sleep_stats$ci_upper, 2), "]"),
+    x = "Hours of Sleep",
+    y = "Number of Students"
+  ) +
+  theme_minimal()
+***
+
+
+ 
