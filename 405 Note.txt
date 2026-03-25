@@ -370,6 +370,19 @@ ggplot(sleep_data, aes(x = hours)) +
   ) +
   theme_minimal()
 ***
-
+***weekly_wmata |>
+  ggplot(aes(x = week, y = weekly_total)) +
+  geom_line(color = "steelblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+*--> ทำ trend line สีแดง เป็น dash
+  scale_y_continuous(labels = scales::comma) +
+*---> เติม comma ในค่าแกน y
+  labs(
+    title = "Weekly WMATA Ridership (2024-2025)",
+    x = "Week",
+    y = "Total Riders"
+  ) +
+  theme_minimal()
+***
 
  
