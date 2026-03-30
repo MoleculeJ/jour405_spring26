@@ -385,4 +385,95 @@ ggplot(sleep_data, aes(x = hours)) +
   theme_minimal()
 ***
 
- 
+-------------------------------------------------------------------------
+
+03/31
+
+
+
+
+***
+dollar_format <- function(x) { paste0("$", format(x/1000, big.mark=","), "K") }
+*--> ฟังชั่นนี้จะเปลี่ยน X ซึ่งเป็นตัวเลขเป็น String ที่เขียนว่า $....(เอาเลขที่เติมไปหาร 1000 แล้วใส่คอมม้า)....K เช่น function(1000000) จะได้ออกมาเป็น $1,000K 
+***
+ggplot(home_data, aes(x = reorder(sale_id, sale_price), y = sale_price)) +
+*--> ตรง X คือบอกให้เรียงแท่งในคอลัมน์ sale_id ตามค่าของมันในคอลัมน์ sale_price
+  geom_col(fill = "seagreen", alpha = 0.8) +
+  geom_hline(yintercept = prior_mean, color = "darkred", size = 1, linetype = "dashed") +
+  annotate("text", x = 3, y = prior_mean - 8000, 
+           label = "Previous Average ($285K)", hjust = 0, fontface = "bold", color = "darkred") +
+  scale_y_continuous(labels = dollar_format) +
+  labs(
+    title = "Home Sales After Transit Line",
+    subtitle = "Horizontal line shows previous neighborhood average of $285,000",
+    x = "Recent Home Sales",
+    y = "Sale Price",
+    caption = "Source: County Property Records"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 10),
+    axis.text.x = element_blank(),
+*--> เอา label ออก
+    axis.ticks.x = element_blank()
+*--> เอา label ออก
+  )
+***
+t_test_result <- t.test(
+  home_data$sale_price,
+*--> ค่า mean ใหม่ ของบ้านใน list 14 หลัง
+  mu = prior_mean,
+*--> ค่า mean เก่าของบ้าน 
+  alternative = "greater"
+*--> อันนี้คือระบุว่าเป็น one-sided test คือ test hypothesis ว่ามีบางอย่างเปลี่ยนไปในทิศทางเดียว (เพิ่มขึ้น, น้อยลง) อย่างในแบบฝึกนี้เราต้องการหาว่า ราคาบ้านเพิ่มขึ้นรึเปล่า (Null Hypothesis H0 = ค่า mean ใหม่ไม่ได้ต่างจากเดิม / H1 = ค่า mean ใหม่มากกว่าค่า mean เดิม) เราจะหาว่าจากข้อมูลชุดนี้ มันเพียงพอมั้ยที่จะพิสูจน์ว่า H0 มีโอกาสไม่จริง และมีแค่ไหน ถ้ามีแล้วมีมากพอแสดงว่าข้อมูลชุดนี้มี Statistical Significance 
+)
+***
+*--> ผลจากอี code ข้างบน
+data: home_data$sale_price 
+t = 6.127,
+*--> ตัว t บอกว่าอี mean ใหม่นี้มันห่างจาก mean เก่าเท่าไหร่ในหน่วยของ standard error unit ถ้ามันต่ำกว่า 2 แสดงว่ามีโอกาสสูงที่มันจะห่างกันเพราะความบังเอิญ แต่ถ้ามากกว่าแสดงว่า มันน่าจะห่างไม่ใช่เพราะความบังเอิญ 
+df = 13,
+*--> อันนี้คือค่า degree of freedom หามาจาก n-1  
+p-value = 0.0000181 
+*--> อันนี้หมายความว่าถ้าค่า mean ใหม่ (คิดจากตัวอย่าง sample บ้าน 14 หลัง ที่เรามี) มันจะเท่ากับ mean เก่าคือ 285K จริง (Null Hypothesis) ก็มีโอกาสแค่ 0.000181% เท่านั้นแหละที่จะเป็นจริง คือ % น้อยมากที่ Null Hypothesis จะมีโอกาสเป็นความจริง ฉะนั้นมีโอกาสสูงมากที่ hypothesis เราจะจริง (ตามหลักคือถ้า p-value = 0.05 หรือ 5% ก็ถือว่ามีโอกาสสูงแล้ว) --> หลักๆ เราทำอีกสูตรนี้เพราะเราจะหา p-value แหละ 
+alternative hypothesis: true mean is greater than 285000 95 percent 
+confidence interval: 298863.8 Inf 
+*--> เพราะว่ามันเป็น one-sided test ข้างนึงเลยจะเป็น infi อันนี้หมายความว่า เรามั่นใจ 95% เลยหล่ะว่า ค่า mean จริงจะอย่างน้อย 298863.8
+sample estimates: mean of x 304500
+*--> mean ใหม่เท่ากับ 304500
+***
+ci <- t.test(home_data$sale_price)$conf.int
+*--> อันนี้คือหา CI แบบเป็นช่วง
+***
+ci_formatted <- tibble(
+  `Lower bound` = dollar_format(ci[1]),
+*--> ดึงค่าตัวที่ 1 แล้วใส่ ฟังค์ชั่นทำค่าเป็น k ลงไป
+  `Upper bound` = dollar_format(ci[2]),
+  `Confidence level` = "95%"
+)
+***
+midpoint <- ceiling(nrow(car_thefts) / 2)
+*--> ceiling คือปัดขึ้นหมด ไม่ว่าจะเลย .5 หรือ ไม่ เช่น 2.1 ก็ปัดเป็น 3
+***
+t_test_periods <- t.test(total ~ period, data = car_thefts)
+*--> อันนี้คือหมายความว่า ให้ทำ t-test กับค่าในคอลัมน์ total แต่ทำแยกกันจากกลุ่มทีกำหนดในคอลัมน์ period
+***
+period_summary |> 
+ggplot(aes(x = period, y = mean_thefts, fill = period)) +
+*--> fill = period อันนี้เติมสีเข้าไปใน bar 
+  geom_col() +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+*--> width คือเอาไว้กำหนดว่า อี่แท่ง error จะกว้างแค่ไหน
+  geom_text(aes(label = round(mean_thefts, 1)), vjust = -0.5, size = 4) +
+*--> vjust ถ้าติดลบคือ เลื่อน text ลงมา
+  labs(
+    title = "Comparing Car Thefts: First Half vs. Second Half of Data Period",
+    subtitle = paste0("p-value = ", round(t_test_periods$p.value, 3)),
+    x = "Time Period",
+    y = "Average Number of Car Thefts"
+  ) +
+  scale_fill_manual(values = c("First Half" = "#66c2a5", "Second Half" = "#fc8d62")) +
+  theme_minimal() +
+  theme(legend.position = "none")
+*--> เอา legend ออก

@@ -1,6 +1,6 @@
 ---
 title: "Car Thefts Significance"
-name: REPLACE WITH YOUR NAME
+name: Molecule Jongwilai
 ---
 
 Your editor wants to know if there have been recent changes in the number of car thefts in Prince George's County. Using monthly figures and significance testing, you'll come up with an answer and decide whether there's a story here. As with the previous homework, provide answers in this notebook when prompted and you will have to fill in values where you see REPLACE_ME. Get started by loading the tidyverse in a new R block.
@@ -10,6 +10,7 @@ Your editor wants to know if there have been recent changes in the number of car
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 # LOAD THE TIDYVERSE
+library(tidyverse)
 ```
 
 
@@ -31,6 +32,9 @@ glimpse(car_thefts)
 We'll make a line chart using geom_line() to try and illustrate any trend over time. What's your initial reaction to the change in car thefts? Is there a trend?
 
 PUT ANSWERS HERE
+---
+Overall, the number of car thefts seems to decline from mid-2023 to early 2026 with some month-to-month variations. There are big drops around Sep 2023, April 2024, and Feb 2025 following by significant surges in the following months.  
+---
 
 ```{r}
 
@@ -61,7 +65,7 @@ Let's add some stats to that process - mean and standard deviation - and calcula
 theft_summary <- car_thefts |> 
   summarize(
     mean_thefts = mean(total),
-    sd_thefts = sd(REPLACE_ME),
+    sd_thefts = sd(total),
     months = n(),
     se_thefts = sd_thefts / sqrt(months),
     margin_error = qt(0.975, df = months - 1) * se_thefts,  # Using t-distribution for small sample
@@ -73,14 +77,13 @@ theft_summary <- car_thefts |>
 theft_summary
 ```
 
-
-
-
 ### Task 5: Visualize the data
 
 Let's make a better chart showing the changes and the statistics we produced in Task 4. Does this change anything about your answer from Task 3?
 
-
+---
+From task 3, besides the trend, I would add that the car thefts average at nearly 376 per month, plus or minus about 34. 
+---
 
 ```{r}
 # Make a better chart
@@ -111,6 +114,11 @@ ggplot(aes(x = month, y = total)) +
 - Propose a headline about the trend in car thefts that is focused on the present and future, but informed by the data you see above.
 
 PUT YOUR ANSWERS HERE.
+---
+- The 95% confidence interval reflects that we're highly certain that the mean could vary from about 341 to 410, or we're confident the mean will fall within this range.  
+- The chart in task 5 would present a more definitive number of car thefts per month. 
+- Car thefts in Prince George's seem to drop from 2023 to 2026, with the average of about 376 per month, plus or minus 34. 
+---
 
 
 ### Task 7: Is the recent trend significant?
@@ -138,11 +146,11 @@ t_test_periods
 period_summary <- car_thefts |> 
   group_by(period) |> 
   summarize(
-    mean_thefts = mean(REPLACE_ME),
+    mean_thefts = mean(total),
     sd_thefts = sd(total),
     months = n(),
     se_thefts = sd_thefts / sqrt(months),
-    margin_error = qt(0.975, df = REPLACE_ME - 1) * se_thefts, # look at how we calculated this above
+    margin_error = qt(0.975, df = months - 1) * se_thefts, # look at how we calculated this above
     ci_lower = mean_thefts - margin_error,
     ci_upper = mean_thefts + margin_error
   )
@@ -171,7 +179,9 @@ Given the above chart, is the difference between the two periods statistically s
 How would you revise your headline from Task 6, if at all? What would you tell your editor, and what would you expect her to ask you?
 
 PUT ANSWERS HERE
+---
+The difference between the two periods is statistically significant, as the decrease in mean in the second half period is very unlikely to happen by chance alone (p-value = 0). Or this means that we can reject the null hypothesis, which is that the mean from the first half does not change, because it's very likely that the mean from the first to the second half changes, not by chance. 
 
-
-
+I probably add some significant numbers to the headline like this: "Car thefts in Prince George's appear to drop from 2023 to 2026 unlikely by chance, with average from about 439 to 312" I would tell my editor that from the test, there's a strong statistical evidence that the mean of car thefts drop between first and second half of the period we divided, and I guess she might want to know the means, margin of errors, CI of both period and the p-value to verify my findings. 
+---
 When you are finished, add, commit and push your notebook and submit the URL in ELMS.
