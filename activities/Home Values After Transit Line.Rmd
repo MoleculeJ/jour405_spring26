@@ -61,9 +61,7 @@ new_stats
 
 ANSWER HERE
 ---
-SE? CI?
-
-
+The new average is $19500 higher than the prior mean. Subjectively, the difference looks big to me, but as the SD of prior home sales is larger (32000) than the difference of new and old mean, the new and old prices may not be that different overall. In addition, at least I would want to know the confidence interval to see what the range is that the new true mean is likely to fall into, and I would want to know further whether this change happened by chance, or the change is likely to be true.  
 ---
 
 ### Task 3: Visualize the distribution (1 point)
@@ -104,8 +102,7 @@ ggplot(home_data, aes(x = sale_price)) +
 
 ANSWER HERE
 ---
-All above the old averege
-
+All 14 home sales are above the old average. This histogram shows that the new prices spread from nearly $290K to around $325K, and this range is above the old average at $285k
 ---
 
 ### Task 4: Set up and perform a hypothesis test (2 points)
@@ -114,8 +111,8 @@ This is where we formally test the officials' claim. Fill in the REPLACE_ME valu
 
 **Hypotheses:**
 
-- **H₀ (Null):** The home prices have not changed
-- **H₁ (Alternative):** The home prices have indeed changed
+- **H₀ (Null):** The home prices have not changed.
+- **H₁ (Alternative):** The home prices have indeed changed.
 
 ```{r}
 # Set the significance level
@@ -136,8 +133,7 @@ t_test_result
 
 ANSWER HERE
 ---
-Yes we can reject null hypothesis 
-
+The p-value is less than 0.05, meaning that we can reject the null hypothesis. We can say that the increasing of home prices is very likely to happen and not by chance (the possibility that the home price will not change is very unlikely). 
 ---
 
 ### Task 5: Interpret the results with a confidence interval (2 points)
@@ -170,9 +166,7 @@ story_stats
 
 ANSWER HERE
 ---
-
-
-
+No, the range, $297.6244 - $311.3756, is above the old average, meaning that we're very confident that the true mean of all new home sales will fall in the range that is above the old one of old home sales, or simply, the home prices will likely seem to go up overall. 
 ---
 
 ### Task 6: Calculate the effect size (3 points)
@@ -204,6 +198,9 @@ tibble(
 **Answer this question:** The effect size is "medium." In dollar terms, the average increase is about $19,500. But remember that the standard deviation of home prices in this neighborhood was $32,000 *before* the transit line — meaning prices already varied by tens of thousands of dollars from sale to sale. Given that context, does a $19,500 increase seem large or modest? How does the effect size help you think about this differently than just looking at the dollar amount?
 
 ANSWER HERE
+---
+The decrease seems modest as the SD of old house prices is even bigger than the difference, meaning that the overall new price may not change that much. The effect size gives a statistical context to better evaluate whether the change in prices seems to be meaningful, as judged by the raw dollar amount alone, $19.5K seem intuitively big as it doesn't account for the effect of prior SD in, but the effect size helps with that.   
+---
 
 ### Task 7: What's the story? (6 points)
 
@@ -212,10 +209,20 @@ You now have all the statistical evidence. But writing the story requires more t
 **Part A:** The local officials are going to claim the transit line increased home values. Based on your analysis, is that claim supported? Write 2-3 sentences for the top of your story that accurately reflect both the statistical significance AND the effect size. Don't just echo the officials' talking points — interrogate them.
 
 ANSWER HERE
+---
+Statistically speaking, the findings are pretty moderate to support the claim. Yes, the new transit line is very likely to increase the home prices, but this change isn't statistically large or small. 
+
+For the story I might write:
+
+The data of 14 new homes indicates that the prices rise up to the average of $304.5K, $19.5K higher than the average of prior home prices. The new transit line might account for this 6.8% change.
+---
 
 **Part B:** A $19,500 increase is real and statistically significant, but what *else* could explain rising home prices in this neighborhood? List at least two alternative explanations that a good reporter would want to investigate before attributing the increase entirely to the transit line.
 
 ANSWER HERE
+---
+I think the shifting in home demand and the number of public facilities in the area could also account for this change. Journalists may have to look into whether the number of people looking for houses increases, or whether public places like parks, shopping malls, or hospitals increase, before making a conclusion about what drives the home prices up. If more people are looking for homes, or more outlets are planned to be open in the area, the new transit line may not be the only factor at play. 
+---
 
 
 When you are finished, save your work, switch to GitHub Desktop, then add, commit and push your changes to GitHub and submit the URL of the notebook in ELMS.
