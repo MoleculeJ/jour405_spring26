@@ -389,7 +389,10 @@ ggplot(sleep_data, aes(x = hours)) +
 
 03/31
 
-
+When you have hypotheses...you have 2
+--> Null Hypothesis สมมติฐานตั้งต้นว่าไม่มีอะไรเปลี่ยนแปลง  
+--> Alternative Hypothesis สมมติฐานจริงว่ามีบางอย่างเปลี่ยนแปลง  
+- Statistical Significance ไม่ได้หมายความว่ามันสำคัญเสมอไป เพราะ มันอาจจะเปลี่ยนจริง แต่ไม่ได้มีความหมายขนาดนั้น it depends on how big is the effect size, so statistical significant doesn't equal to statistical meaningful 
 
 
 ***
@@ -477,3 +480,103 @@ ggplot(aes(x = period, y = mean_thefts, fill = period)) +
   theme_minimal() +
   theme(legend.position = "none")
 *--> เอา legend ออก
+***
+Paste() กับ Paste0() ต่างกันตรง อันแรก มันใช้เชื่อมของเข้าด้วยกันแล้วแบ่งด้วย space อันนี้ที่คือต่อกันเลยแบบไม่มี space
+
+------------------------------------------------
+
+04/07
+
+***
+nweighted_by_voter_category <- nonvoters_data |>
+  filter(!is.na(Q21), Q21 > 0)
+#คือ กรองเอาเฉพาะแถวที่ไม่ใช่ NA และมีค่ามากกว่า 0
+  group_by(voter_category, Q21) |>
+  summarize(count = n(), .groups = "drop_last") |>
+#บรรทัดนี้หมายความว่า หลังจาก summarize เสร็จแล้วให้เอาการ grouping level หลัง (Q21) ออกเหลือคแค่ข้างหน้าในการคำนวณครั้งถัด ๆ ไป ซึ่งในที่นี้มันไม่มีผลที่ต่างกันมาก เพราะบรรทัดถัดไป เราเจาะจงอยู่แล้วให้มันนับ sum แถว count 
+  mutate(total = sum(count),
+         percentage = count / total * 100) |>
+  ungroup()
+***
+unweighted_summary <- unweighted_by_voter_category |>
+  pivot_wider(
+    id_cols = voter_category,
+    names_from = Q21,
+    values_from = percentage,
+    names_prefix = "pct_"
+  ) 
+#pivot_wider คือ collapse คอลัมน์ voter_category ที่มีค่าเหมือนกันเข้าด้วยกัน (always, rarely/never, sporadic) แล้วเอาค่าใน shared กลุ่มย่อยซึ่งคือคอลัมน์ Q21  (1, 2, 3) มาตั้งเป็นคอลัมน์ใหม่ ดึงค่าในคอลัมน์ percentage มาใช้ แล้วเติม "pct_" ไว้ข้างหน้าคอลัมน์ใหม่  
+***
+comparison <- unweighted_summary |>
+  # Join the two tables to compare them
+  inner_join(weighted_summary, by = "voter_category", suffix = c("_unweighted", "_weighted")) |>
+#Join โดยใช้คอลัมน์ voter_category และในคอลัมน์ที่ซ้ำกันอื่น ๆ ให้เติมต่อท้ายด้วย _unweighted และ _weighted (ค่าตั้งต้นมันจะเป็น .x .y)
+  # Calculate the differences in percentage points
+  mutate(
+    yes_diff = `Yes (%)_weighted` - `Yes (%)_unweighted`,
+    no_diff = `No (%)_weighted` - `No (%)_unweighted`,
+    unsure_diff = `Unsure (%)_weighted` - `Unsure (%)_unweighted`
+  ) |>
+  # Select just the differences for our table
+  select(voter_category, yes_diff, no_diff, unsure_diff) |>
+  rename(
+    "Yes (% point diff)" = yes_diff,
+    "No (% point diff)" = no_diff,
+    "Unsure (% point diff)" = unsure_diff
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
