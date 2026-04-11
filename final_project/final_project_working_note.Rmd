@@ -1,0 +1,115 @@
+---
+title: "Final Project"
+author: "Molecule Jongwilai"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+```
+
+**4/11/2026**
+
+I downloaded the PISA 2022 student questionnaires data from this site: https://webfs.oecd.org/pisa2022/index.html, which includes the math scores of 613,744 students and other variables I need for the analysis, such as country, socioeconomic status, educational resources, etc. 
+
+The original file is frighteningly gigantic (like 2GB), so I had to preliminary clean it up and select only the variables I want to work with. 
+
+I used the codebook and the master version of the questionnaire (I put them in the final_project folder as well) to interpret and designate variables I want to analyze as follows;
+
+1. CNT: Country Code
+2. Math Score: PV1MATH (Plausible value 1 in mathematics)
+3. Socioeconomic Status: ESCS (Index of economic, social, and cultural status)
+4. Study Time:
+4.1 ST294Q02JA (How many days in a typical school week does the student study for school or homework before go to school?)
+4.2 ST295Q02JA (How many days in a typical school week does the student study for school or homework before leaving school?)
+5. Educational Resources:
+5.1 ST255Q01JA (How many books are there in the student's house?)
+5.2 ST253Q01JA (How many digital devices with screens are there in a student's house?)
+5.3 ST254Q06JA (How many cell phones with internet access are there in the student's house?)
+
+After targeting variables, I brought in the PISA 2022 student questionnaires data to an R notebook, selected said variables, and saved a new file as .csv.
+
+```{r}
+#I did this elsewhere because the file is really big but want to note the process here in case you want to check my work.
+
+#library(tidyverse)
+#install.packages("haven")
+#library(haven)
+#student <- read_sav("student.sav")
+#library(dplyr)
+#student_data_subset <- student |> select(CNT, PV1MATH, ESCS, ST294Q02JA, ST295Q02JA, ST255Q01JA, ST253Q01JA, ST254Q06JA)
+#write.csv(student_data_subset, "student_data_subset.csv", row.names = FALSE)
+```
+
+I brought the new data file here and cleaned it, so the column names sound understandable.
+
+```{r}
+math_score <- read_csv("student_data_subset.csv")
+math_score <- math_score |>
+  rename(
+    country = CNT,
+    math_score = PV1MATH,
+    socioecon_index = ESCS,
+    studytime_before_school = ST294Q02JA,
+    studytime_after_school = ST295Q02JA,
+    books_count = ST255Q01JA,
+    digital_device_count = ST253Q01JA,
+    phone_internet_count = ST254Q06JA
+  )
+glimpse(math_score)
+```
+
+Note about the dataframe; 
+
+There are 613744 entries representing 613744 students PISA surveyed in 2022. 
+There are 8 variables 
+
+1. country: The values are still in country code format. I'll clean them in the next step.
+
+2. math_score: The values range from 0 to 943.041
+
+3. socioecon_index: The values range from -6.8407 to 7.3800. I'll read this site (https://www.oecd.org/en/publications/pisa-2022-results-volume-v_c2e44201-en/full-report/component-20.html?utm_source=chatgpt.com) to get a grasp on how the index indicates socioeconomic status in the next step. 
+
+4. studytime_before_school: The values need to be converted into these labels. 
+01 = 0 days
+02 = 1 day
+03 = 2 days
+04 = 3 days
+05 = 4 days
+06 = 5 or more days
+
+5. studytime_after_school: The values need to be converted into these labels.
+01 = 0 days
+02 = 1 day
+03 = 2 days
+04 = 3 days
+05 = 4 days
+06 = 5 or more days
+
+6. books_count: The values need to be converted into these labels.
+01 = no books
+02 = 1 - 10 books
+03 = 11 - 25 books
+04 = 26 - 100 books
+05 = 101 - 200 books
+06 = 201 = 500 books
+07 = more than 500 books
+
+7. digital_device_count: The values need to be converted into these labels;
+01 = no devices
+02 = 1 device
+03 = 2 devices
+04 = 3 devices
+05 = 4 devices
+06 = 5 devices
+07 = 6 - 10 devices
+08 = more than 10 devices
+
+8. phone_internet_count: The values need to be converted into these labels;
+01 = no cell phones with internet 
+02 = 1 or 2 cell phones with internet
+03 = 3 - 5 cell phones with internet
+04 = more than 5 cell phones with internet
+05 = don't know
+
+If time allows, I might try to analyze other relevant variables, or if you think other variables may correlate to the match score and want me to include them in the project, please let me know. Thank you.
