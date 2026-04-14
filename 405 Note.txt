@@ -525,10 +525,22 @@ comparison <- unweighted_summary |>
     "Unsure (% point diff)" = unsure_diff
   )
 
+-----
 
+04/14
 
-
-
+- อย่า compare weighted result to unweighted result 
+- Flat line on the scatter plot means no relationship at all 
+- ถ้า scatter plot เส้นมันไม่ได้ตั้ง perfect 45 องศา เราต้องเขียนอารม A is a part of factors that affect B but it's not a dominant factor 
+***
+matches |> summarize(correlation = cor(fouls, goal_diff, method="pearson"))
+#ถ้าใช้สูตรนี้ค่าจะออกมาเป็น -1 ถึง 1 โดยที่ 0 แปลว่าไม่มีความสัมพันธ์กันเลย 1 คือสัมพันกันแบบสอดคล้อง ถ้า A เพิ่ม B เพิ่ม -1 คือสวนทางกัน ถ้า A เพิ่ม B ลด 
+***
+matches |> 
+  ggplot() +
+  geom_point(aes(x=goal_diff, y=fouls)) +
+  geom_smooth(aes(x=goal_diff, y=fouls), method="lm")
+#lm คือ linea model 
 
 
 
