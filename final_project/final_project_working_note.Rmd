@@ -8,6 +8,32 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 ```
 
+**4/19/2026**
+
+The main hypotheses; 
+- Could differences in kids' math scores be explained by countries or regions?
+- Which variables could be associated with the kids' math proficiency?
+
+Based on my key questions and data I acquired, I think the following analyses would be the most applicable and useful to test my hypotheses. 
+
+*Percentile*
+- I may begin by calculating the percentile of each math score to provide some sense of hierarchical locations for the references in the further steps.  
+
+*Normal Distribution / Z-score*
+- I want to create a histogram to check the distribution of overall math scores. If the distribution shows a large SD or a far spread out of the observations from the mean, I could calculate the Z-score of each observation to identify obvious outliers and examine which students from which countries the usually high scores belong to.     
+- I also want to check the distribution of other datasets of factors—socioeconomic index, study time, and resources—to see if they are distributed normally, and if they display large SD. If there are significant outliers, I can look into more on what scores those outlier data points represent, and what the locations (percentiles) of those scores are, to see if the abnormality of these factors is associated with higher scores.     
+
+*Standard Error / Confidence Interval*
+- I want to compare the average math score of kids from each region, visualizing bar charts or box plots, but for a valid comparison that could capture the nuance of uncertainty, I also want to calculate the CI of each average and factor them into the analysis.   
+
+*Correlation / Multiple Linear Regression* 
+- I want to prove whether any additional variables, besides regions, could potentially influence the math scores. I want to calculate correlation and plot a scatter plot that illustrates the relationship between math scores and socioeconomic index, study time, and educational resources. And if you will cover this in class, I may also use multiple regression to assess the combined effect of these variables. 
+
+*Statistical Significance / Effect Size*
+- Lastly, if time allows, I want to assess the statistical significance to determine, for example, whether the difference in math score from Asia differs from the overall mean by chance, or whether the relationship between math score and study time occurs due to chance. Also, I will consider the effect size to evaluate the significance of the difference between regions or relationships between variables.      
+
+----------------------------------------------------------------------------------------------
+
 **4/11/2026**
 
 I downloaded the PISA 2022 student questionnaires data from this site: https://webfs.oecd.org/pisa2022/index.html, which includes the math scores of 613,744 students and other variables I need for the analysis, such as country, socioeconomic status, educational resources, etc. 
