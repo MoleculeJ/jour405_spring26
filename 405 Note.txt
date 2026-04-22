@@ -542,10 +542,72 @@ matches |>
   geom_smooth(aes(x=goal_diff, y=fouls), method="lm")
 #lm คือ linea model 
 
+---
 
+04/21
+***
+schools |>
+  ggplot(aes(x = `FARMS Pct`, y = `% Met or Exceeded Math Expectations`)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+# se mean standard deviation. FALSE mean do not shoe it 
+  labs(x = "FARMS Percentage", y = "% Met or Exceeded Math Expectations",
+       title = "Math Scores vs. FARMS Percentage, Montgomery County PA")
+***
+model <- lm(`% Met or Exceeded Math Expectations` ~ `FARMS Pct`, data = schools)
+summary(model)
+#This tells R to run a linear regression model to find a relationship between `% Met or Exceeded Math Expectations` and  `FARMS Pct` from the dataframe--> schools / The first value is the outcome (Math) and the second value is predictor (FARMS)
+***
+#This is the summary of the model 
 
+Call:
+lm(formula = `% Met or Exceeded Math Expectations` ~ `FARMS Pct`, 
+    data = schools)
 
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-34.897 -11.628   3.295  11.713  31.111 
 
+Coefficients:
+            Estimate Std. Error t value            Pr(>|t|)    
+(Intercept) 59.57897    3.71055  16.057 <0.0000000000000002 ***
+`FARMS Pct`  0.12349    0.07874   1.568               0.123    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 16.32 on 55 degrees of freedom
+Multiple R-squared:  0.04281,	Adjusted R-squared:  0.0254 
+F-statistic:  2.46 on 1 and 55 DF,  p-value: 0.1225
+
+#We should focus on these divas (1) P-value, she will tell us whether this relationship is likely to happen by chance (if it's more than 0.05, it's very likely to happen by chance, so we shouldn't give a fuck!!) (2) Adjusted R-squared, she will tell us how much (in percentage) that the predictor (independent variable) could be accounted for the change in the outcome (dependent variable) (3) Coefficients, she will tell us the size of relationship like how much one change in predictor can move the outcome and if it's + that's mean predictor and outcome changes in the same direction, but if it's -, that's mean both change in the opposite direction.
+***
+cat("Full dataset model:\n")
+cat("  Coefficient:", coef(model)[2], "\n")
+cat("  p-value:", summary(model)$coefficients[2,4], "\n")
+cat("  Adjusted R-squared:", summary(model)$adj.r.squared, "\n\n")
+
+#This code block tell R to report the model result in text. coef(model)[2] will look at the model in table form and search for coefficient name and extract the second variables. summary(model)$coefficients[2,4] will summarize the model first and then extract this table 
+
+Coefficients:
+            Estimate Std. Error t value            Pr(>|t|)
+(Intercept) 59.57897    3.71055  16.057 <0.0000000000000002 ***
+`FARMS Pct`  0.12349    0.07874   1.568               0.123
+
+and look for values in row 2 and column 4
+***
+schools_filtered <- schools_filtered |>
+  mutate(
+    predicted = predict(model_filtered),
+    residual = `% Met or Exceeded Math Expectations` - predicted,
+    abs_residual = abs(residual)
+  ) |>
+  arrange(desc(abs_residual))
+
+#predict tell R to go the model and list all the data pointes it plots on the linear regression line, so we can calculate the residual. The residual means the gap between the actual data points and the points on the liner regression line that the model plot to create the line. if the gap is above the predicted points, the residual is +, but if the gap is below, the residual is -.
+***  
+ 
+
+  
 
 
 
