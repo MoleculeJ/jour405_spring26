@@ -605,7 +605,11 @@ schools_filtered <- schools_filtered |>
 
 #predict tell R to go the model and list all the data pointes it plots on the linear regression line, so we can calculate the residual. The residual means the gap between the actual data points and the points on the liner regression line that the model plot to create the line. if the gap is above the predicted points, the residual is +, but if the gap is below, the residual is -.
 ***  
- 
+----------------------
+
+4/28
+
+
 
   
 
