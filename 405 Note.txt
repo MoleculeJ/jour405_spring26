@@ -609,7 +609,26 @@ schools_filtered <- schools_filtered |>
 
 4/28
 
-
+***
+md_turnout |>
+  pivot_longer(cols = c(population, income, pct_bachelors_higher, 
+                       pct_unemployed, median_age, pct_white),
+               names_to = "variable", 
+               values_to = "value") |>
+#ส่วนนี้จะเปลี่ยน format ของข้อมูล จากขอมูลเดิมพวก predictor มันเรียงกันเป็น คอลลัมน์ แนวนอน ส่วนนี้ของโค้ด บอก r ให้จับมันมาวางเป็นแนวตั้ง ในคอลัมน์ชื่อ variable และเอาค่าเดิมมันมาใส่ในคอลัมน์ value ตย.ให้เห็นภาพ
+turnout 	income		poppu
+60		200		5000
+พอเปลี่ยนปุ๊บมันจะเป็นแบบนี้ 
+turnout		variable	value
+60		income		200
+60		poppu		5000
+  ggplot(aes(x = value, y = turnout)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~ variable, scales = "free_x") +
+#แถวนี้บอกให้ ggplot ทำ scatter plot แบบแยกกัน โดยจัดกลุ่มตามค่าในคอลัมน์ variable และ scales = "free_x" สั่งให้แกน x แต่ละ plot ไม่ต้องเหมือนกัน ปรับตามความเหมาะสมของค่า 
+  labs(title = "Relationship between predictors and voter turnout",
+       y = "Voter turnout (%)")
 
   
 
