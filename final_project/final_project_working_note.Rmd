@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 ```
 
-**FINAL SUBMISSION (...........)**
+**FINAL SUBMISSION (05/12/2026)**
 
 ##Data Acquisition##
 
@@ -72,11 +72,11 @@ Note about the dataframe;
 
 There are 613,744 entries representing 613,744 students PISA surveyed in 2022. There are 9 variables
 
-1.  country: The values are still in country code format. I'll clean them in the next step.
+1.  country: The values are in country code format. 
 
 2.  math_score: The values range from 0 to 943.041
 
-3.  socioecon_index: The values range from -6.8407 to 7.3800. I'll read this site (<https://www.oecd.org/en/publications/pisa-2022-results-volume-v_c2e44201-en/full-report/component-20.html?utm_source=chatgpt.com>) to get a grasp on how the index indicates socioeconomic status in the next step.
+3.  socioecon_index: The values range from -6.8407 to 7.3800. 
 
 4.  studytime_before_school: The values need to be converted into these labels; 
 01 = 0 days 
@@ -176,7 +176,7 @@ pisa_data |>
   geom_vline(xintercept = weighted_mean - (SD*3), color = "green", linetype = "dashed", size = 1)
 ```
 
-Finding : Based on the histogram, the math scores are distributed normally with a small SD (101.84), meaning that most of the scores tightly cluster close to the average of 415.36. The extremely high scores, especially beyond 3 SD, are rare.  
+Finding : Based on the histogram, the math scores are distributed normally with a small SD (101.84), meaning that most of the scores tightly cluster close to the weighted average of 424.16. The extremely high scores, especially beyond 3 SD, are rare.  
 
 ```{r}
 #Calculate Z-scores of each math score 
@@ -236,16 +236,15 @@ Finding : Based on the histogram, the distribution of the socioeconomic index is
 ```{r}
 #Calculate Z-scores of each socioeconomic index
 
-#Filter only rows that socioeconomic index's values are not NA first then calculate
-pisa_data_with_socioindex_zscore <- pisa_data |>
-  filter(!is.na(socioecon_index)) |>
+#Calculate Z-scores
+pisa_data_with_socioindex_zscore <- pisa_data_socio |>
   mutate(
     mean_socioecon_index = mean(socioecon_index),
     sd_socioecon_index = sd(socioecon_index),
     z_score_socioecon_index = (socioecon_index - mean_socioecon_index)/sd_socioecon_index
   )
 
-#Filter the math score that have z-score higher than +3. Those are unusually high math score 
+#Filter the socioeconomic index that have z-score higher than +3. Those are unusually high index
 unusual_high_socioecon_index <- pisa_data_with_socioindex_zscore |>
   filter(z_score_socioecon_index > 3) |>
   arrange(desc(z_score_socioecon_index)) |>
@@ -324,7 +323,7 @@ pisa_data |>
   theme_minimal()
 ```
 
-Finding : However, based on the box plot, we'll see that Asia is the region that has the most extremely high scores among other regions.
+Finding : However, based on the box plot, we'll see that Asia is the region that has the most extremely high and low scores among other regions.
 
 #(4) Check correlation of math score with other variables.#
 
@@ -478,7 +477,7 @@ boxplot(
 
 Finding : Students with more phones with internet access at home, on average, have higher math scores. Nonetheless, this is not always the case as the highest category (5+) shows a lower predicted score than that of the 3-5 category. 
 
-# (5) Check statistical significant of each relationship.#
+# (5) Check statistical significance of each relationship.#
 
 ```{r}
 # (1) Math score with socioeconomic index 
@@ -685,11 +684,11 @@ Finding : The effect size of correlation between math score and the number of di
 report_correlation_spearman(pisa_data_phone_internet_ordered$phone_internet_factor, pisa_data_phone_internet_ordered$math_score)
 ```
 
-Finding : The effect size of correlation between math score and the number of digital devices students have at home is 0.1731, which is considered moderate, while the 95% confidence interval is 0.1705 to 0.1757 (0.0052 difference).
+Finding : The effect size of correlation between math score and the number of phones with internet access students have at home is 0.1731, which is considered moderate, while the 95% confidence interval is 0.1705 to 0.1757 (0.0052 difference).
 
 # (7) Build multiple regression model.# 
 
-I'll try to find the multiple regression model that could best explain the variability of math score from the predictors (independent variables) that we've just examined the correlation.
+I'll try to find the multiple regression model that could best explain the variability of math score from the six predictors (independent variables) that we've just examined the correlation.
 
 ```{r}
 #Create new dataframe for the model 
@@ -758,16 +757,47 @@ ggplot(model_comparison, aes(x = reorder(Model, Adjusted_R_squared), y = Adjuste
        x = "Model")
 ```
 
-Finding : Model A, which includes all the variables, can best explain the variability of math score with the adjusted R-squared at 35.93%, while Model C, which I initially insinuate will be the best model because it includes only variables that have effect sizes considered "moderate", turns out to be the least usable model with the adjusted R-squared at 29.74%.  
+Finding : Model A, which includes all the variables, can best explain the variability of math score with the adjusted R-squared at 35.93%, while Model C, which I initially insinuate will be the best model because it includes only variables that have effect sizes considered "moderate", turns out to be the least usable model with the adjusted R-squared at 29.75%.  
 
 ##Story Pitch##
 
+#Important Findings# 
+(1) Math score and regions
+- According to the data analyses, students from oceanic countries, which in this data set consists of Australia and New Zealand, have the highest math score on average compared to average math scores from other continents. 
+- Asia is also a very interesting continent because both groups of students with the most unusually high scores and the most unusually low scores are all from this region.
+(2) Math score and other variables
+- From six variables—socioeconomic index, study time before school, study time after school, books, digital devices, phones with internet—that have been analyzed, there are obviously no variables that seem to be dominant in impacting the math score. Even the variable with the strongest relationship, like the number of digital devices students have at home (effect size: 0.4529), could explain only 21.68% of the variability in math scores. 
+- The best multiple regression model is the one that includes every variable, suggesting that all six variables partially affect the math score.
+- Although every variable seems to affect the math score, study time both before and after school appears to have less influence compared to variables that reflect students' resources or well-being, like socioeconomic index or the number of digital devices at home. 
 
+#Reporting Approach/Questions:# 
+My main reporting question would be what factors influence students' math scores the most.
+- I want to explore more about why students from Oceanic countries have the highest math scores on average. I might start by talking to researchers who conduct this study at PISA to get a grasp on the context and implications of this study, and try to get an interview with some schools' personnel or students from this region to see if there are any differences in their math teaching methods compared to those of other regions. 
+- I also want to delve deeper into finding out about the math score from Asia. I want to know why kids with the highest and lowest math scores come from the same region. Same process as mentioned earlier, I will start by accumulating context of this study from PISA researchers, and then try to talk to some schools in Asia whose kids get the highest and lowest scores to see what factors make these schools different from other parts of the world that result in kids' unusual math performance. In addition, I may try to interview education experts, particularly in education in Asia, to gain insights into the diversity of the educational landscape of this region. 
+- Lastly, I want to investigate why behavioral factors like study time have less influence on math scores compared to factors that reflect socio-economic status or students' resources. After talking to PISA researchers, I may present these findings to educators or economists and ask them for further implications or insight regarding what could impact the math performance the most and why. 
+
+#Problems:# 
+The main reporting question is still very difficult to find a definitive answer to. There may be some nuances that this level of data analysis could not capture. For example, Asia is a large continent with various varied context across multiple sub-regions, and that may explain why both the most overperformed and underperformed kids are from this region; hence, examining Asia collectively as one variable might not be the most valid method in comparing math scores between regions. In addition, as we can see that with all six variables, the model could explain approximately only one in three portion of variability in math score (35.93%), so there may be other factors from the PISA study that could influence math score but weren't included in this analysis.
 
 ##Last Questions##
+If you don't mind answering, I have some last-minute questions I want to ask about this project. 
 
-- weighted use with mean only why?
-- ordered = TRUE/FALSE use case? 
+- In your previous feedback, you suggested to me to apply weighting in the analysis. I was struggling a bit at first about which values I should apply weighting to, and ended up asking ChatGPT about this. I reached the conclusion to use weighting only by calculating the average, because ChatGPT pointed out that applying weighting to SD or each math score for creating a histogram or calculating a Z-score would overcomplicate this analysis and might be too advanced for this project. I want to know that what I will get if applying weighting to every value, and what kind of cases are necessary to apply weighting to every value. 
+
+- From this codeblock you gave me to convert the book count to an ordered categorical factor before calculating the regression,
+---
+pisa_data_books <- pisa_data |>
+  filter(!is.na(books_count)) |>
+  mutate(books_factor = factor(
+    books_count,
+    level = 1:7,
+    labels = c("none", "1-10", "11-25", "26-100", "101-200", "201-500", "500+"),
+    ordered = FALSE # use unordered so lm gives one coefficient per level
+  ))
+---
+my question is what's the difference between "ordered = FALSE" and "ordered = TRUE". ChatGPT told me to change this before I put the dataframe in cor_test(....) to calculate effect size and CI, otherwise it won't produce results the way I can interpret. I understand that "ordered = FALSE" tells R to treat each factor as total separated group, while "ordered = TRUE" tells R to recognize these factors as ranked or ordinal factors. However, I don't thoroughly understand the differences in use cases of both approaches. Why are the ordered factors not necessary for finding regression, but we have to keep them ordered to calculate effect size and CI, and what will happen if I don't make this change before calculating effect size? Could you explain more about this?
+
+#Thank you for teaching this class. I've learned a lot, and all the lessons have been very valuable to me. I hope my work has somehow made teaching this class feel worthwhile.
 
 ------------------------------------------------------------------------
 
