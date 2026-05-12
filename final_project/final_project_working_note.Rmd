@@ -11,9 +11,769 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(tidyverse)
 ```
 
-**4/22/2026**
+**FINAL SUBMISSION (...........)**
+
+##Data Acquisition##
+
+I downloaded the PISA 2022 student questionnaires data from this site: <https://webfs.oecd.org/pisa2022/index.html>, which includes the math scores of 613,744 students and other variables I need for the analysis, such as country, socioeconomic status, educational resources, etc.
+
+The original file is frighteningly gigantic (like 2GB), so I had to preliminary clean it up and select only the variables I want to work with.
+
+*I placed the original data file here in this Google drive: https://drive.google.com/drive/folders/1c2iYn2cXbYxH67PGWDJnerJn9bUMgD1H?usp=sharing*
+
+I used the codebook and the master version of the questionnaire (I put them in the final_project folder as well) to interpret and designate variables I want to analyze as follows;
+
+1.  CNT: Country Code
+2.  Math Score: PV1MATH (Plausible value 1 in mathematics)
+3.  Socioeconomic Status: ESCS (Index of economic, social, and cultural status)
+4.  Study Time: 
+4.1 ST294Q02JA (How many days in a typical school week does the student study for school or homework before go to school?)
+4.2 ST295Q02JA (How many days in a typical school week does the student study for school or homework before leaving school?)
+5.  Educational Resources: 
+5.1 ST255Q01JA (How many books are there in the student's house?) 
+5.2 ST253Q01JA (How many digital devices with screens are there in a student's house?) 
+5.3 ST254Q06JA (How many cell phones with internet access are there in the student's house?)
+6.  W_FSTUWT (Weighting: As you suggested, I'll use this for descriptive statistical analysis and average scores/socioeconomic index comparison.)
+
+After targeting variables, I brought in the PISA 2022 student questionnaires data to an R notebook, selected said variables, and saved a new file as .csv.
 
 ```{r}
+#I did this elsewhere because the file is really big but want to note the process here in case you want to check my work.
+
+#library(tidyverse)
+#install.packages("haven")
+#library(haven)
+#student <- read_sav("student.sav")
+#library(dplyr)
+#student_data_subset <- student |> select(CNT, PV1MATH, ESCS, ST294Q02JA, ST295Q02JA, ST255Q01JA, ST253Q01JA, ST254Q06JA, W_FSTUWT)
+#write.csv(student_data_subset, "student_data_subset.csv", row.names = FALSE)
+```
+
+I brought the new data file here and cleaned it, so the column names sound understandable.
+
+```{r}
+pisa_data <- read_csv("student_data_subset.csv")
+pisa_data <- pisa_data |>
+  rename(
+    country = CNT,
+    math_score = PV1MATH,
+    socioecon_index = ESCS,
+    studytime_before_school = ST294Q02JA,
+    studytime_after_school = ST295Q02JA,
+    books_count = ST255Q01JA,
+    digital_device_count = ST253Q01JA,
+    phone_internet_count = ST254Q06JA,
+    weight = W_FSTUWT
+  )
+glimpse(pisa_data)
+```
+
+Note about the dataframe;
+
+There are 613,744 entries representing 613,744 students PISA surveyed in 2022. There are 9 variables
+
+1.  country: The values are still in country code format. I'll clean them in the next step.
+
+2.  math_score: The values range from 0 to 943.041
+
+3.  socioecon_index: The values range from -6.8407 to 7.3800. I'll read this site (<https://www.oecd.org/en/publications/pisa-2022-results-volume-v_c2e44201-en/full-report/component-20.html?utm_source=chatgpt.com>) to get a grasp on how the index indicates socioeconomic status in the next step.
+
+4.  studytime_before_school: The values need to be converted into these labels; 
+01 = 0 days 
+02 = 1 day 
+03 = 2 days 
+04 = 3 days 
+05 = 4 days 
+06 = 5 or more days
+
+5.  studytime_after_school: The values need to be converted into these labels; 
+01 = 0 days 
+02 = 1 day 
+03 = 2 days 
+04 = 3 days 
+05 = 4 days
+06 = 5 or more days
+
+6.  books_count: The values need to be converted into these labels; 
+01 = no books 
+02 = 1 - 10 books 
+03 = 11 - 25 books 
+04 = 26 - 100 books 
+05 = 101 - 200 books 
+06 = 201 = 500 books 
+07 = more than 500 books
+
+7.  digital_device_count: The values need to be converted into these labels; 
+01 = no devices 
+02 = 1 device 
+03 = 2 devices 
+04 = 3 devices
+05 = 4 devices 
+06 = 5 devices 
+07 = 6 - 10 devices 
+08 = more than 10 devices
+
+8.  phone_internet_count: The values need to be converted into these labels; 
+01 = no cell phones with internet 
+02 = 1 or 2 cell phones with internet 
+03 = 3 - 5 cell phones with internet 
+04 = more than 5 cell phones with internet 
+05 = don't know
+
+9.  weight: The values range from 1 to 2371.65
+
+##Analysis##
+
+# (1) Calculate descriptive statistics and find percentile for the reference.#
+
+```{r}
+#Descriptive Stats
+
+#Basic summary of math score
+summary(pisa_data$math_score)
+
+#Calculate the weighted mean and SD
+weighted_mean <- weighted.mean(
+  pisa_data$math_score,
+  w = pisa_data$weight,
+  na.rm = TRUE
+)
+
+SD <- sd(pisa_data$math_score)
+
+#Create table summary of math score with weighted mean
+math_score_summary <- pisa_data |>
+  summarise(
+    mean_math_score = weighted.mean(math_score, w = weight, na.rm = TRUE),
+    median_math_score = median(math_score),
+    sd_math_score = sd(math_score),
+    max_math_score = max(math_score),
+    min_math_score = min(math_score),
+    iqr_math_score = IQR(math_score)
+  )
+```
+```{r}
+#Add percentile of each math score to the main dataframe 
+pisa_data <- pisa_data |>
+  mutate(
+    percentile_math_score = ntile(math_score, 100)
+  )
+```
+
+# (2) Visualize the distribution and calculate Z-score.#
+
+```{r}
+#Create histogram to examine distribution of math score data
+pisa_data |>
+  ggplot() +
+  geom_histogram(aes(x = math_score)) +
+  geom_vline(xintercept = weighted_mean, color = "red", linetype = "solid", size = 2) + 
+  geom_vline(xintercept = weighted_mean + SD, color = "purple", linetype = "dashed", size = 1) + 
+  geom_vline(xintercept = weighted_mean - SD, color = "purple", linetype = "dashed", size = 1) +  
+  geom_vline(xintercept = weighted_mean + (SD*2), color = "blue", linetype = "dashed", size = 1) + 
+  geom_vline(xintercept = weighted_mean - (SD*2), color = "blue", linetype = "dashed", size = 1) + 
+  geom_vline(xintercept = weighted_mean + (SD*3), color = "green", linetype = "dashed", size = 1) + 
+  geom_vline(xintercept = weighted_mean - (SD*3), color = "green", linetype = "dashed", size = 1)
+```
+
+Finding : Based on the histogram, the math scores are distributed normally with a small SD (101.84), meaning that most of the scores tightly cluster close to the average of 415.36. The extremely high scores, especially beyond 3 SD, are rare.  
+
+```{r}
+#Calculate Z-scores of each math score 
+pisa_data <- pisa_data |>
+  mutate(
+    mean_math_score = mean(math_score),
+    sd_math_score = sd(math_score),
+    z_score_math_score = (math_score - mean_math_score)/sd_math_score
+  )
+#Filter the math score that have z-score higher than +3. Those are unusually high math score 
+unusual_high_score <- pisa_data |>
+  filter(z_score_math_score > 3) |>
+  arrange(desc(z_score_math_score)) |>
+  select(country, math_score, z_score_math_score)
+
+#Count students with unusually high math score per country
+unusual_high_score |>
+  group_by(country) |>
+  summarise(
+    students_count_per_country = n()
+  ) |>
+  arrange(desc(students_count_per_country))
+```
+
+Finding : There are 1,054 observations with z-scores greater than 3. These scores are unusually high and accounted for less than 0.3% of all observations in this dataset. The top 5 countries/cities with the most data points in this group are Singapore, Taipei, Hong Kong, Korea, and Macao. 
+
+```{r}
+#Create histogram to examine distribution of socioeconomic index
+
+#Filter only rows that socioeconomic index's values are not NA and calculate weighted mean and SD 
+pisa_data_socio <- pisa_data |>
+  filter(!is.na(socioecon_index))
+
+weighted_mean_socio <- weighted.mean(
+  pisa_data_socio$socioecon_index,
+  w = pisa_data_socio$weight,
+  na.rm = TRUE
+)
+
+SD_socio <- sd(pisa_data_socio$socioecon_index)
+
+#Create histogram
+pisa_data_socio |>
+  ggplot() +
+  geom_histogram(aes(x = socioecon_index)) + 
+  geom_vline(xintercept = weighted_mean_socio, color = "red", linetype = "solid", size = 2) +
+  geom_vline(xintercept = weighted_mean_socio + SD_socio, color = "purple", linetype = "dashed", size = 1) + 
+  geom_vline(xintercept = weighted_mean_socio - SD_socio, color = "purple", linetype = "dashed", size = 1) +
+  geom_vline(xintercept = weighted_mean_socio + (SD_socio*2), color = "blue", linetype = "dashed", size = 1) + 
+  geom_vline(xintercept = weighted_mean_socio - (SD_socio*2), color = "blue", linetype = "dashed", size = 1) + 
+  geom_vline(xintercept = weighted_mean_socio + (SD_socio*3), color = "green", linetype = "dashed", size = 1) + 
+  geom_vline(xintercept = weighted_mean_socio - (SD_socio*3), color = "green", linetype = "dashed", size = 1)
+```
+
+Finding : Based on the histogram, the distribution of the socioeconomic index is generally normal, with a slight left skew. The SD is very small, meaning that most of the data points cluster close to the average. The extremely high indexes are rare. 
+
+```{r}
+#Calculate Z-scores of each socioeconomic index
+
+#Filter only rows that socioeconomic index's values are not NA first then calculate
+pisa_data_with_socioindex_zscore <- pisa_data |>
+  filter(!is.na(socioecon_index)) |>
+  mutate(
+    mean_socioecon_index = mean(socioecon_index),
+    sd_socioecon_index = sd(socioecon_index),
+    z_score_socioecon_index = (socioecon_index - mean_socioecon_index)/sd_socioecon_index
+  )
+
+#Filter the math score that have z-score higher than +3. Those are unusually high math score 
+unusual_high_socioecon_index <- pisa_data_with_socioindex_zscore |>
+  filter(z_score_socioecon_index > 3) |>
+  arrange(desc(z_score_socioecon_index)) |>
+  select(country, math_score, z_score_math_score, percentile_math_score, socioecon_index, z_score_socioecon_index)
+
+unusual_high_socioecon_index |>
+  head(10)
+```
+
+Finding : Judging from the top 10 highest socioeconomic indexes with z-score from 4.88 to 6.80, we see the mix of scores with high percentile, such as 96 or 81, and low percentile, such as 2 or 9. We could say that high socioeconomic status alone may not guarantee a high math score. 
+
+# (3) Compare averages with standard error and confidence interval.#
+
+```{r}
+#Compare the average math score of kids from each region 
+
+#Add the region to the main dataframe first. I give a list of country codes and label to ChatGPT and beg for help because it's too many names to type manually: https://chatgpt.com/share/69ea8a1b-6054-83ea-94a2-144438e316ce 
+pisa_data <- pisa_data |>
+  mutate(continent = case_when(
+    # Europe
+    country %in% c("ALB","AUT","BEL","BGR","CHE","CZE","DEU","DNK","ESP","EST",
+                   "FIN","FRA","GBR","GRC","HRV","HUN","IRL","ISL","ITA","KSV",
+                   "LTU","LVA","MDA","MKD","MLT","MNE","NLD","NOR","POL","PRT",
+                   "ROU","SRB","SVK","SVN","SWE") ~ "Europe",
+    # Asia
+    country %in% c("ARE","BRN","GEO","HKG","IDN","ISR","JOR","JPN","KAZ","KHM",
+                   "KOR","MAC","MNG","MYS","PHL","PSE","QAT","QAZ","QCY","QUR",
+                   "SAU","SGP","TAP","THA","TUR","UZB","VNM") ~ "Asia",
+    # Africa
+    country %in% c("MAR") ~ "Africa",
+    # North America
+    country %in% c("CAN","USA","MEX","DOM","JAM","GTM","CRI","PAN","SLV") ~ "North America",
+    # South America
+    country %in% c("ARG","BRA","CHL","COL","PER","PRY","URY") ~ "South America",
+    # Oceania
+    country %in% c("AUS","NZL") ~ "Oceania",
+    TRUE ~ NA_character_
+  ))
+
+#Calculate the weighted average math score of each continent 
+continent_math_score <- pisa_data |>
+  group_by(continent) |>
+  summarise(
+    mean_math_score = weighted.mean(math_score, w = weight, na.rm = TRUE),
+#Calculate CI of the average of each continent
+    sd_math_score = sd(math_score),
+    students_count = n(),
+    se_math_score = sd_math_score / sqrt(students_count),
+    margin_error = qt(0.975 , df = students_count - 1) * se_math_score,
+  ) |>
+  ungroup() |>
+  mutate(
+    ci_lower = mean_math_score - margin_error,
+    ci_upper = mean_math_score + margin_error
+  )
+continent_math_score
+```
+```{r}
+#Visualize bar charts showing weighted average and CI
+continent_math_score |>
+  ggplot(aes(x = continent, y = mean_math_score)) + 
+  geom_col()+
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+  geom_text(aes(label = round(mean_math_score, 1)), vjust = -0.5, size = 4) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+Finding : Consider the average of math scores per continent, Oceania region has the highest score, followed by Europe and North America. There is no overlap in confidence intervals as they are very small. This is because, as I understand, the number of data points of each group is very large. 
+  
+```{r}
+#Visualize box chart to see overview of scores from each continent 
+pisa_data |>
+  ggplot(aes(x = continent, y = math_score)) +
+  geom_boxplot() + 
+  theme_minimal()
+```
+
+Finding : However, based on the box plot, we'll see that Asia is the region that has the most extremely high scores among other regions.
+
+#(4) Check correlation of math score with other variables.#
+
+```{r}
+# (1) Math score with socioeconomic index 
+
+#Find Pearson's R
+pisa_data_socio |>
+  summarise(correlation = cor(socioecon_index, math_score, method = "pearson"))
+```
+```{r}
+#Plot the relationship
+pisa_data_socio |>
+  ggplot() +
+  geom_point(aes(x = socioecon_index, y = math_score)) + 
+  geom_smooth(aes(x = socioecon_index, y = math_score), method = "lm")
+```
+
+Finding : Math score has a somewhat correlation with the socioeconomic index (Pearson's r = 0.45). The trend line points upward, meaning the relationship is positive, or the higher socioeconomic index could drive up the math score. 
+
+```{r}
+# (2) Math score with study time before school 
+
+#Find Pearson's R
+pisa_data_studytime_before <- pisa_data |>
+  filter(!is.na(studytime_before_school))
+
+pisa_data_studytime_before |>
+  summarise(correlation = cor(studytime_before_school, math_score, method = "pearson"))
+```
+```{r}
+#Plot the relationship
+pisa_data_studytime_before |>
+  ggplot() +
+  geom_point(aes(x = studytime_before_school, y = math_score)) + 
+  geom_smooth(aes(x = studytime_before_school, y = math_score), method = "lm")
+```
+
+Finding : Math score has a small correlation with the study time students spent before going to school (Pearson's r = -0.23). The relationship is negative. The trend line slopes slightly downward, meaning the higher the study time before school, the lower the math score. 
+
+```{r}
+# (3) Math score with study time after school 
+
+#Find Pearson's R
+pisa_data_studytime_after <- pisa_data |>
+  filter(!is.na(studytime_after_school))
+
+pisa_data_studytime_after |>
+  summarise(correlation = cor(studytime_after_school, math_score, method = "pearson"))
+```
+```{r}
+#Plot the relationship
+pisa_data_studytime_after |>
+  ggplot() +
+  geom_point(aes(x = studytime_after_school, y = math_score)) + 
+  geom_smooth(aes(x = studytime_after_school, y = math_score), method = "lm")
+```
+
+Finding : Math score barely has a correlation with the study time students spent after coming back from school (Pearson's r = 0.098). The trend line is almost flat. 
+
+```{r}
+# (4) Math score with books
+
+#Use Spearman method as books variable is a categorical data
+
+#Convert books_count to an ordered factor with readable labels
+pisa_data_books <- pisa_data |>
+  filter(!is.na(books_count)) |>
+  mutate(books_factor = factor(
+    books_count,
+    level = 1:7,
+    labels = c("none", "1-10", "11-25", "26-100", "101-200", "201-500", "500+"),
+    ordered = FALSE # use unordered so lm gives one coefficient per level
+  ))
+
+#Fit the model
+books_factor_model <- lm(math_score ~ books_factor, data = pisa_data_books)
+summary(books_factor_model)
+```
+```{r}
+#Create boxplot for better comparison across categories
+boxplot(
+  math_score ~ books_factor,
+  data = pisa_data_books,
+  xlab = "Books at Home",
+  ylab = "Math Score"
+)
+```
+
+Finding : Students with more books at home, on average, have higher math scores. However, the relationship is not perfectly linear. The 201 - 500 category shows the highest predicted score, which is higher than the highest category, 500+.   
+
+```{r}
+# (5) Math score with digital devices
+
+#Use Spearman method as digital devices variable is a categorical data
+
+#Convert digital_device_count to an ordered factor with readable labels
+pisa_data_digital_device <- pisa_data |>
+  filter(!is.na(digital_device_count)) |>
+  mutate(digital_device_factor = factor(
+    digital_device_count,
+    level = 1:8,
+    labels = c("none", "1", "2", "3", "4", "5", "6-10", "10+"),
+    ordered = FALSE 
+  ))
+
+#Fit the model
+digital_device_factor_model <- lm(math_score ~ digital_device_factor, data = pisa_data_digital_device)
+summary(digital_device_factor_model)
+```
+```{r}
+#Create boxplot for better comparison across categories
+boxplot(
+  math_score ~ digital_device_factor,
+  data = pisa_data_digital_device,
+  xlab = "Digital Devices at Home",
+  ylab = "Math Score"
+)
+```
+
+Finding : Students with more books on average have higher math scores. This relationship is generally linear. The highest category (10+) shows the highest predicted score. 
+
+```{r}
+# (5) Math score with phones + internet access
+
+#Use Spearman method as phones with internet access variable is a categorical data
+
+#Convert phone_internet_count to an ordered factor with readable labels
+pisa_data_phone_internet <- pisa_data |>
+  filter(!is.na(phone_internet_count)) |>
+  mutate(phone_internet_factor = factor(
+    phone_internet_count,
+    level = 1:5,
+    labels = c("none", "1 or 2", "3-5", "5+", "unknown"),
+    ordered = FALSE 
+  ))
+
+#Fit the model
+phone_internet_factor_model <- lm(math_score ~ phone_internet_factor, data = pisa_data_phone_internet)
+summary(phone_internet_factor_model)
+```
+```{r}
+#Create boxplot for better comparison across categories
+boxplot(
+  math_score ~ phone_internet_factor,
+  data = pisa_data_phone_internet,
+  xlab = "Phones with Internet access at Home",
+  ylab = "Math Score"
+)
+```
+
+Finding : Students with more phones with internet access at home, on average, have higher math scores. Nonetheless, this is not always the case as the highest category (5+) shows a lower predicted score than that of the 3-5 category. 
+
+# (5) Check statistical significant of each relationship.#
+
+```{r}
+# (1) Math score with socioeconomic index 
+socioindex_factor_model <- lm(`math_score` ~ `socioecon_index`, data = pisa_data_socio)
+summary(socioindex_factor_model)
+```
+
+Finding : 
+- P-value: Very small (2.2e-16) due to the large size of the data set
+- Adjusted R-squared: Socioeconomic index can explain a small portion (%20.38) of variability in math score.
+- Coefficient: The relationship is positive (40.82) or changes in the same direction.
+
+```{r}
+# (2) Math score with study time before school  
+studytime_before_factor_model <- lm(`math_score` ~ `studytime_before_school`, data = pisa_data_studytime_before)
+summary(studytime_before_factor_model)
+```
+
+Finding : 
+- P-value: Very small (2.2e-16) due to the large size of the data set
+- Adjusted R-squared: Study time before school can barely explain the variability in math scores, with a very small portion of 5%.
+- Coefficient: The relationship is negative (-11.69) or changes in the opposite direction.
+
+```{r}
+# (3) Math score with study time after school  
+studytime_after_factor_model <- lm(`math_score` ~ `studytime_after_school`, data = pisa_data_studytime_after)
+summary(studytime_after_factor_model)
+```
+
+Finding : 
+- P-value: Very small (2.2e-16) due to the large size of the data set
+- Adjusted R-squared: Study time after school can barely explain the variability in math scores, with a very small portion of 0.96%.
+- Coefficient: The relationship is positive (5.83) or changes in the same direction.
+
+```{r}
+# (4) Math score with books  
+
+#Re-examine the model
+summary(books_factor_model)
+```
+
+Finding : 
+- P-value: Very small (2.2e-16) due to the large size of the data set
+- Adjusted R-squared: The number of books in the houses can explain a small portion (%19.69) of variability in math score.
+- Coefficient: All the levels (coefficients) have a positive correlation with math score, and the 201 - 500 category has the most impact on the math score. 
+
+```{r}
+# (5) Math score with digital device  
+
+#Re-examine the model
+summary(digital_device_factor_model)
+```
+
+Finding : 
+- P-value: Very small (2.2e-16) due to the large size of the data set
+- Adjusted R-squared: The number of digital devices in the houses can explain a small portion (%21.68) of variability in math score.
+- Coefficient: All the levels (coefficients) have a positive correlation with math score, and the 10+ category has the most impact on the math score.
+
+```{r}
+# (6) Math score with phone + internet access  
+
+#Re-examine the model
+summary(phone_internet_factor_model)
+```
+
+Finding : 
+- P-value: Very small (2.2e-16) due to the large size of the data set
+- Adjusted R-squared: The number of phones with internet in the houses can explain a small portion (11.77%) of variability in math score.
+- Coefficient: All the levels (coefficients) have a positive correlation with math score, and the 3-5 category has the most impact on the math score.
+
+# (6) Check effect size and CI of each correlation.#
+
+```{r}
+#Create function to use for reporting effect size and CI 
+report_correlation <- function(x,y) {
+  #Find Pearson's R
+  corr_result <- cor.test(x,y)
+  #Extract R or coefficient 
+  r <- unname(corr_result$estimate)
+  #Extract confidence interval 
+  ci_lower <- corr_result$conf.int[1]
+  ci_upper <- corr_result$conf.int[2]
+  #Interpret the effect size
+  effect_size <- dplyr::case_when(
+    abs(r) < 0.1 ~ "negligible",
+    abs(r) < 0.3 ~ "small",
+    abs(r) < 0.5 ~ "moderate",
+    abs(r) >= 0.5 ~ "large"
+  )
+  #Report the result
+  cat("The effect size of correlation is ", round(r , 4), ', interpreted as "', effect_size, '" and the confidence interval is ', round(ci_lower , 4), " - ", round(ci_upper , 4), ".\n", sep = "" )
+}
+```
+
+```{r}
+# (1) Math score with socioeconomic index 
+report_correlation(pisa_data_socio$socioecon_index, pisa_data_socio$math_score)
+```
+
+Finding : The effect size of correlation between math score and socioeconomic index is 0.4514, which is considered moderated, while the 95% confidence interval is 0.4494 to 0.4534 (0.0004 difference). 
+
+```{r}
+# (2) Math score with study time before school  
+report_correlation(pisa_data_studytime_before$studytime_before_school, pisa_data_studytime_before$math_score)
+```
+
+Finding : The effect size of correlation between math score and study time students spent before school is -0.2325, which is considered small, while the 95% confidence interval is -0.235 to -0.2301 (0.0049 difference).
+
+```{r}
+# (3) Math score with study time after school  
+report_correlation(pisa_data_studytime_after$studytime_after_school, pisa_data_studytime_after$math_score)
+```
+
+Finding : The effect size of correlation between math score and study time students spent after school is 0.0984, which is considered negligible, while the 95% confidence interval is 0.0958 to 0.1009 (0.0051 difference).
+
+```{r}
+#ChatGPT said cor.test(x,y) won't work on text categories, so it suggested me to adjust the categories to stay ordered and convert them to numeric ranks before running the test.
+
+#Adjust the categories to stay ordered
+
+#Books
+pisa_data_books_ordered <- pisa_data |>
+  filter(!is.na(books_count)) |>
+  mutate(books_factor = factor(
+    books_count,
+    level = 1:7,
+    labels = c("none", "1-10", "11-25", "26-100", "101-200", "201-500", "500+"),
+    ordered = TRUE # change from FALSE
+  ))
+
+#Digital Devices
+pisa_data_digital_device_ordered <- pisa_data |>
+  filter(!is.na(digital_device_count)) |>
+  mutate(digital_device_factor = factor(
+    digital_device_count,
+    level = 1:8,
+    labels = c("none", "1", "2", "3", "4", "5", "6-10", "10+"),
+    ordered = TRUE 
+  ))
+
+#Phones with internet access
+pisa_data_phone_internet_ordered <- pisa_data |>
+  filter(!is.na(phone_internet_count)) |>
+  mutate(phone_internet_factor = factor(
+    phone_internet_count,
+    level = 1:5,
+    labels = c("none", "1 or 2", "3-5", "5+", "unknown"),
+    ordered = TRUE 
+  ))
+
+#Then adjust the function to change the categories to numeric ranks before running the test 
+
+#ChatGPT said if I adjust the function to "cor.test(as.numeric(x), y, method = "spearman)", it will omit the CI in the result, so I need to new test format from additional package. 
+
+#Install new package first...
+install.packages("correlation")
+library(correlation)
+
+#Then I can fix the function...
+report_correlation_spearman <- function(x,y) {
+  #Convert categories to numeric ranks and then run the Spearman correlation with CI
+  corr_result <- correlation::cor_test(
+    data.frame(
+      x = as.numeric(x),
+      y = y
+    ),
+    x = "x",
+    y = "y",
+    method = "spearman"
+  )
+  #Extract R or coefficient 
+  r <- as.numeric(corr_result$rho)
+  #Extract confidence interval 
+  ci_lower <- as.numeric(corr_result$CI_low)
+  ci_upper <- as.numeric(corr_result$CI_high)
+  #Interpret the effect size
+  effect_size <- dplyr::case_when(
+    abs(r) < 0.1 ~ "negligible",
+    abs(r) < 0.3 ~ "small",
+    abs(r) < 0.5 ~ "moderate",
+    abs(r) >= 0.5 ~ "large"
+  )
+  #Report the result
+  cat("The effect size of correlation is ", round(r , 4), ', interpreted as "', effect_size, '" and the confidence interval is ', round(ci_lower , 4), " - ", round(ci_upper , 4), ".\n", sep = "" )
+}
+```
+
+```{r}
+# (4) Math score with books  
+report_correlation_spearman(pisa_data_books_ordered$books_factor, pisa_data_books_ordered$math_score)
+```
+
+Finding : The effect size of correlation between math score and the number of books students have at home is 0.4411, which is considered moderate, while the 95% confidence interval is 0.439 to 0.4432 (0.0042 difference).
+
+```{r}
+# (5) Math score with digital device  
+report_correlation_spearman(pisa_data_digital_device_ordered$digital_device_factor, pisa_data_digital_device_ordered$math_score)
+```
+
+Finding : The effect size of correlation between math score and the number of digital devices students have at home is 0.4529, which is considered moderate, while the 95% confidence interval is 0.4508 to 0.455 (0.0042 difference).
+
+```{r}
+# (6) Math score with phone + internet access  
+report_correlation_spearman(pisa_data_phone_internet_ordered$phone_internet_factor, pisa_data_phone_internet_ordered$math_score)
+```
+
+Finding : The effect size of correlation between math score and the number of digital devices students have at home is 0.1731, which is considered moderate, while the 95% confidence interval is 0.1705 to 0.1757 (0.0052 difference).
+
+# (7) Build multiple regression model.# 
+
+I'll try to find the multiple regression model that could best explain the variability of math score from the predictors (independent variables) that we've just examined the correlation.
+
+```{r}
+#Create new dataframe for the model 
+pisa_data_multiple_regression <- pisa_data |>
+  #Get rid of all NA
+  filter(!is.na(socioecon_index)) |>
+  filter(!is.na(studytime_before_school)) |>
+  filter(!is.na(studytime_after_school)) |>
+  filter(!is.na(books_count)) |>
+  filter(!is.na(digital_device_count)) |>
+  filter(!is.na(phone_internet_count)) |>
+  #Then convert every categorical variables to factors 
+  mutate(books_factor = factor(
+    books_count,
+    level = 1:7,
+    labels = c("none", "1-10", "11-25", "26-100", "101-200", "201-500", "500+"),
+    ordered = FALSE 
+  )) |>
+  mutate(digital_device_factor = factor(
+    digital_device_count,
+    level = 1:8,
+    labels = c("none", "1", "2", "3", "4", "5", "6-10", "10+"),
+    ordered = FALSE 
+  )) |>
+  mutate(phone_internet_factor = factor(
+    phone_internet_count,
+    level = 1:5,
+    labels = c("none", "1 or 2", "3-5", "5+", "unknown"),
+    ordered = FALSE 
+  ))
+```
+
+```{r}
+# Create model A which include all the variables 
+modelA <- lm(math_score ~  socioecon_index + studytime_before_school + studytime_after_school + books_factor + digital_device_factor + phone_internet_factor, data = pisa_data_multiple_regression)
+summary(modelA)
+```
+```{r}
+# Create model B, which excludes the variables that have an effect size considered as "negligible". 
+modelB <- lm(math_score ~  socioecon_index + studytime_before_school + books_factor + digital_device_factor + phone_internet_factor, data = pisa_data_multiple_regression)
+summary(modelB)
+```
+```{r}
+# Create model C, which excludes the variables that have effect sizes considered as "negligible" and "small". 
+modelC <- lm(math_score ~  socioecon_index + books_factor + digital_device_factor, data = pisa_data_multiple_regression)
+summary(modelC)
+```
+```{r}
+#Compare Model 
+cat("Model A - Adjusted R-squared:", summary(modelA)$adj.r.squared, "\n")
+cat("Model B - Adjusted R-squared:", summary(modelB)$adj.r.squared, "\n")
+cat("Model C - Adjusted R-squared:", summary(modelC)$adj.r.squared, "\n")
+```
+```{r}
+# Create comparison chart
+model_names <- c("Model A", "Model B", "Model C")
+adj_r_squared <- c(summary(modelA)$adj.r.squared,
+                   summary(modelB)$adj.r.squared,
+                   summary(modelC)$adj.r.squared)
+
+model_comparison <- data.frame(Model = model_names, Adjusted_R_squared = adj_r_squared)
+ggplot(model_comparison, aes(x = reorder(Model, Adjusted_R_squared), y = Adjusted_R_squared)) +
+  geom_col(fill = "#4B0082") +
+  coord_flip() +
+  labs(title = "Model Comparison by Adjusted R-squared",
+       x = "Model")
+```
+
+Finding : Model A, which includes all the variables, can best explain the variability of math score with the adjusted R-squared at 35.93%, while Model C, which I initially insinuate will be the best model because it includes only variables that have effect sizes considered "moderate", turns out to be the least usable model with the adjusted R-squared at 29.74%.  
+
+##Story Pitch##
+
+
+
+##Last Questions##
+
+- weighted use with mean only why?
+- ordered = TRUE/FALSE use case? 
+
+------------------------------------------------------------------------
+
+**4/22/2026**
+
+``{r}
 #Import data and rename the columns' names
 pisa_data <- read_csv("student_data_subset.csv")
 pisa_data <- pisa_data |>
@@ -32,7 +792,7 @@ glimpse(pisa_data)
 
 (1) Do some basic summary and find percentile for the reference.
 
-```{r}
+``{r}
 #Basic summary of math score
 summary(pisa_data$math_score)
 math_score_summary <- pisa_data |>
@@ -45,7 +805,7 @@ math_score_summary <- pisa_data |>
     iqr_math_score = IQR(math_score)
   )
 ```
-```{r}
+``{r}
 #Add percentile of each math score to the main dataframe 
 pisa_data <- pisa_data |>
   mutate(
@@ -55,7 +815,7 @@ pisa_data <- pisa_data |>
 
 (2) Visualize the distribution and calculate Z-score
 
-```{r}
+``{r}
 #Create histogram to examine distribution of math score data
 pisa_data |>
   ggplot() +
@@ -70,7 +830,7 @@ pisa_data |>
 ```
 Finding : Based on the histogram, the math scores are distributed normally with a small SD (101.84), meaning that most of the scores tightly cluster close to the average of 440.87. The extremely high scores, especially beyond 3 SD, are rare.    
 
-```{r}
+``{r}
 #Calculate Z-scores of each math score 
 pisa_data <- pisa_data |>
   mutate(
@@ -94,7 +854,7 @@ unusual_high_score |>
 
 Finding : There are 1,054 observations with z-scores greater than 3. These scores are unusually high and accounted for less than 0.3% of all observations in this dataset. The top 5 countries/cities with the most data points in this group are Singapore, Taipei, Hong Kong, Korea, and Macao. 
 
-```{r}
+``{r}
 #Create histogram to examine distribution of socioeconomic index
 #Filter only rows that socioeconomic index's values are not NA first then create histogram
 pisa_data |>
@@ -111,7 +871,7 @@ pisa_data |>
 ```
 Finding : Based on the histogram, the distribution of the socioeconomic index is generally normal, with a slight left skew. The SD is very small, meaning that most of the data points cluster close to the average. The extremely high indexes are rare. 
 
-```{r}
+``{r}
 #Calculate Z-scores of each socioeconomic index
 #Filter only rows that socioeconomic index's values are not NA first then calculate
 pisa_data_with_socioindex_zscore <- pisa_data |>
@@ -135,7 +895,7 @@ Finding : Judging from the top 10 highest socioeconomic indexes with z-score fro
 
 (3) Compare averages with standard error and confidence interval
 
-```{r}
+``{r}
 #Compare the average math score of kids from each region 
 #Add the region to the main dataframe first. I give a list of country codes and label to ChatGPT and beg for help because it's too many names to type manually: https://chatgpt.com/share/69ea8a1b-6054-83ea-94a2-144438e316ce 
 pisa_data <- pisa_data |>
@@ -177,7 +937,7 @@ continent_math_score <- pisa_data |>
   )
 continent_math_score
 ```
-```{r}
+``{r}
 #Visualize bar charts showing average and CI
 continent_math_score |>
   ggplot(aes(x = continent, y = mean_math_score)) + 
@@ -187,26 +947,26 @@ continent_math_score |>
   theme_minimal() +
   theme(legend.position = "none")
 ```
-Finding = Consider the average of math scores per continent, Oceania region has the highest score, followed by Europe and Asia. There is no overlap in confidence intervals as they are very small. This is because, as I understand, the number of data points of each group is very large. 
+Finding : Consider the average of math scores per continent, Oceania region has the highest score, followed by Europe and Asia. There is no overlap in confidence intervals as they are very small. This is because, as I understand, the number of data points of each group is very large. 
   
-```{r}
+``{r}
 #Visualize box chart to see overview of scores from each continent 
 pisa_data |>
   ggplot(aes(x = continent, y = math_score)) +
   geom_boxplot() + 
   theme_minimal()
 ```
-Finding = However, based on the box plot, we'll see that Asia is the region that has the most extremely high scores among other regions.
+Finding : However, based on the box plot, we'll see that Asia is the region that has the most extremely high scores among other regions.
 
 (4) Check correlation of math score with other variables.
 
-```{r}
+``{r}
 # (1) Math score with socioeconomic index 
 pisa_data |>
   filter(!is.na(socioecon_index)) |>
   summarise(correlation = cor(socioecon_index, math_score, method = "pearson"))
 ```
-```{r}
+``{r}
 #Plot the relationship
 pisa_data |>
   filter(!is.na(socioecon_index)) |>
@@ -214,15 +974,15 @@ pisa_data |>
   geom_point(aes(x = socioecon_index, y = math_score)) + 
   geom_smooth(aes(x = socioecon_index, y = math_score), method = "lm")
 ```
-Finding = Math score has a somewhat correlation with the socioeconomic index (Pearson's r = 0.45). The trend line points upward, meaning the relationship is positive, or the higher socioeconomic index could drive up the math score. 
+Finding : Math score has a somewhat correlation with the socioeconomic index (Pearson's r = 0.45). The trend line points upward, meaning the relationship is positive, or the higher socioeconomic index could drive up the math score. 
 
-```{r}
+``{r}
 # (2) Math score with study time before school 
 pisa_data |>
   filter(!is.na(studytime_before_school)) |>
   summarise(correlation = cor(studytime_before_school, math_score, method = "pearson"))
 ```
-```{r}
+``{r}
 #Plot the relationship
 pisa_data |>
   filter(!is.na(studytime_before_school)) |>
@@ -230,15 +990,15 @@ pisa_data |>
   geom_point(aes(x = studytime_before_school, y = math_score)) + 
   geom_smooth(aes(x = studytime_before_school, y = math_score), method = "lm")
 ```
-Finding = Math score has a small correlation with the study time students spent before going to school (Pearson's r = -0.23). Strangely, the relationship is negative. The trend line slopes slightly downward, meaning the higher the study time before school, the lower the math score. 
+Finding : Math score has a small correlation with the study time students spent before going to school (Pearson's r = -0.23). Strangely, the relationship is negative. The trend line slopes slightly downward, meaning the higher the study time before school, the lower the math score. 
 
-```{r}
+``{r}
 # (3) Math score with study time after school 
 pisa_data |>
   filter(!is.na(studytime_after_school)) |>
   summarise(correlation = cor(studytime_after_school, math_score, method = "pearson"))
 ```
-```{r}
+``{r}
 #Plot the relationship
 pisa_data |>
   filter(!is.na(studytime_after_school)) |>
@@ -246,15 +1006,15 @@ pisa_data |>
   geom_point(aes(x = studytime_after_school, y = math_score)) + 
   geom_smooth(aes(x = studytime_after_school, y = math_score), method = "lm")
 ```
-Finding = Math score barely has a correlation with the study time students spent after coming back from school (Pearson's r = 0.098). The trend line is almost flat.  
+Finding : Math score barely has a correlation with the study time students spent after coming back from school (Pearson's r = 0.098). The trend line is almost flat.  
 
-```{r}
+``{r}
 # (4) Math score with books
 pisa_data |>
   filter(!is.na(books_count)) |>
   summarise(correlation = cor(books_count, math_score, method = "pearson"))
 ```
-```{r}
+``{r}
 #Plot the relationship
 pisa_data |>
   filter(!is.na(books_count)) |>
@@ -262,15 +1022,15 @@ pisa_data |>
   geom_point(aes(x = books_count, y = math_score)) + 
   geom_smooth(aes(x = books_count, y = math_score), method = "lm")
 ```
-Finding = Math score has a somewhat correlation with the number of books in kids' houses (Pearson's r = 0.42). The trend line points upward, meaning the relationship is positive, or the more books in the house, could equal a higher the math score.
+Finding : Math score has a somewhat correlation with the number of books in kids' houses (Pearson's r = 0.42). The trend line points upward, meaning the relationship is positive, or the more books in the house, could equal a higher the math score.
 
-```{r}
+``{r}
 # (5) Math score with digital devices 
 pisa_data |>
   filter(!is.na(digital_device_count)) |>
   summarise(correlation = cor(digital_device_count, math_score, method = "pearson"))
 ```
-```{r}
+``{r}
 #Plot the relationship
 pisa_data |>
   filter(!is.na(digital_device_count)) |>
@@ -278,9 +1038,9 @@ pisa_data |>
   geom_point(aes(x = digital_device_count, y = math_score)) + 
   geom_smooth(aes(x = digital_device_count, y = math_score), method = "lm")
 ```
-Finding = Math score has a somewhat correlation with the number of digital devices in kids' houses (Pearson's r = 0.42). The trend line goes upward, meaning the relationship is positive, or the more digital devices in the house, could equal a higher the math score.
+Finding : Math score has a somewhat correlation with the number of digital devices in kids' houses (Pearson's r = 0.42). The trend line goes upward, meaning the relationship is positive, or the more digital devices in the house, could equal a higher the math score.
 
-```{r}
+``{r}
 # (5) Math score with phones + internet access 
 pisa_data |>
   filter(!is.na(phone_internet_count)) |>
@@ -288,7 +1048,7 @@ pisa_data |>
   filter(phone_internet_count != 5) |>
   summarise(correlation = cor(phone_internet_count, math_score, method = "pearson"))
 ```
-```{r}
+``{r}
 #Plot the relationship
 pisa_data |>
   filter(!is.na(phone_internet_count)) |>
@@ -297,66 +1057,66 @@ pisa_data |>
   geom_point(aes(x = phone_internet_count, y = math_score)) + 
   geom_smooth(aes(x = phone_internet_count, y = math_score), method = "lm")
 ```
-finding = Math score has a small correlation with the number of phones with internet access in kids' houses (Pearson's r = 0.22). The relationship is positive, and the trend line slopes slightly upward, meaning the more phones with internet access, the higher the math score.
+finding : Math score has a small correlation with the number of phones with internet access in kids' houses (Pearson's r = 0.22). The relationship is positive, and the trend line slopes slightly upward, meaning the more phones with internet access, the higher the math score.
 
 (5) Check statistical significant of each relationship.
 
-```{r}
+``{r}
 # (1) Math score with socioeconomic index 
 score_socioindex_model <- lm(`math_score` ~ `socioecon_index`, data = pisa_data)
 summary(score_socioindex_model)
 ```
-Finding = 
+Finding : 
 - P-value: Very small (2.2e-16) due to the large size of the data set
 - Adjusted R-squared: Socioeconomic index can explain a small portion (%20.38) of variability in math score.
 - Coefficient: The relationship is positive (40.82) or changes in the same direction.
 
-```{r}
+``{r}
 # (2) Math score with study time before school  
 score_studytime_before_model <- lm(`math_score` ~ `studytime_before_school`, data = pisa_data)
 summary(score_studytime_before_model)
 ```
-Finding = 
+Finding : 
 - P-value: Very small (2.2e-16) due to the large size of the data set
 - Adjusted R-squared: Study time before school can barely explain the variability in math scores, with a very small portion of 5%.
 - Coefficient: The relationship is negative (-11.69) or changes in the opposite direction.
 
-```{r}
+``{r}
 # (3) Math score with study time after school  
 score_studytime_after_model <- lm(`math_score` ~ `studytime_after_school`, data = pisa_data)
 summary(score_studytime_after_model)
 ```
-Finding = 
+Finding : 
 - P-value: Very small (2.2e-16) due to the large size of the data set
 - Adjusted R-squared: Study time after school can barely explain the variability in math scores, with a very small portion of 0.96%.
 - Coefficient: The relationship is positive (5.83) or changes in the same direction.
 
-```{r}
+``{r}
 # (4) Math score with books  
 score_books_model <- lm(`math_score` ~ `books_count`, data = pisa_data)
 summary(score_books_model)
 ```
-Finding = 
+Finding : 
 - P-value: Very small (2.2e-16) due to the large size of the data set
 - Adjusted R-squared: The number of books in the houses can explain a small portion (%17.84) of variability in math score.
 - Coefficient: The relationship is positive (27.77) or changes in the same direction.
 
-```{r}
+``{r}
 # (5) Math score with digital device  
 score_digital_device_model <- lm(`math_score` ~ `digital_device_count`, data = pisa_data)
 summary(score_digital_device_model)
 ```
-Finding = 
+Finding : 
 - P-value: Very small (2.2e-16) due to the large size of the data set
 - Adjusted R-squared: The number of digital devices in the houses can explain a small portion (%20.95) of variability in math score.
 - Coefficient: The relationship is positive (24.94) or changes in the same direction.
 
-```{r}
+``{r}
 # (6) Math score with phone + internet access  
 score_phone_internet_model <- lm(`math_score` ~ `phone_internet_count`, data = pisa_data)
 summary(score_phone_internet_model)
 ```
-Finding = 
+Finding : 
 - P-value: Very small (2.2e-16) due to the large size of the data set
 - Adjusted R-squared: The number of phones with internet access in the houses can barely explain the variability in math score with a small portion of 3.53%.
 - Coefficient: The relationship is positive (24.70) or changes in the same direction.
@@ -415,7 +1175,7 @@ I used the codebook and the master version of the questionnaire (I put them in t
 
 After targeting variables, I brought in the PISA 2022 student questionnaires data to an R notebook, selected said variables, and saved a new file as .csv.
 
-```{r}
+``{r}
 #I did this elsewhere because the file is really big but want to note the process here in case you want to check my work.
 
 #library(tidyverse)
@@ -429,7 +1189,7 @@ After targeting variables, I brought in the PISA 2022 student questionnaires dat
 
 I brought the new data file here and cleaned it, so the column names sound understandable.
 
-```{r}
+``{r}
 math_score <- read_csv("student_data_subset.csv")
 math_score <- math_score |>
   rename(
